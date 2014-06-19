@@ -18,20 +18,28 @@
 ;; LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 ;; FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 ;; DEALINGS IN THE SOFTWARE.
-#!r6rs
+;; #!r6rs
 
 ;; Auxiliary library for (weinholt struct). Please don't use this
 ;; library directly.
 
-(library (weinholt struct pack-aux)
+(define-library (weinholt struct pack-aux)
   (export format-size roundb add)
-  (import (for (rnrs) (meta -1)))
+  (import (scheme base)
+          (scheme char)
+          (srfi 60)
+          )
+  ;; (import (for (rnrs) (meta -1)))
+
+  (begin
 
   (define (add augend addend)
-    (if (integer? augend)
-        (+ augend addend)
-        (with-syntax ((x augend) (y addend))
-          #'(+ x y))))
+    ;; (if (integer? augend)
+    ;;     (+ augend addend)
+    ;;     (with-syntax ((x augend) (y addend))
+    ;;       (syntax (+ x y))))
+    (+ augend addend)
+    )
 
   (define (roundb offset alignment)
     (cond ((integer? offset)
@@ -40,9 +48,10 @@
           ((and (integer? alignment) (= alignment 1))
            offset)
           (else
-           (with-syntax ((x offset))
-             #`(bitwise-and (+ x #,(- alignment 1))
-                            #,(- alignment))))))
+           ;; (with-syntax ((x offset))
+           ;;   (quasisyntax (bitwise-and (+ x (unsyntax (- alignment 1)))
+           ;;                  (unsyntax (- alignment)))))
+           (bitwise-and (+ offset (- alignment 1)) (- alignment)))))
   
   ;; Find the number of bytes the format requires.
   ;; (format-size "2SQ") => 16
@@ -76,4 +85,4 @@
              (let ((n (size (string-ref fmt i))))
                (lp (+ i 1) (+ (if align (roundb s n) s)
                               (if rep (* n rep) n))
-                   #f align)))))))
+                   #f align))))))))

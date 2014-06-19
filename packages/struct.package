@@ -1,11 +1,32 @@
 (package
- (url "http://snow2.s3-website-us-east-1.amazonaws.com/industria/struct.tgz")
- (library
-  (name (seth tar))
-  (path "weinholt/struct/der.sld")
-  (version "1.0")
-  (homepage "https://weinholt.se/industria/")
-  (maintainers "Seth Alves <seth@hungry.com>")
-  (authors "Göran Weinholt <goran@weinholt.se>")
-  (description "Distinguished Encoding Rules (DER)")
-  (license mit)))
+  (name ())
+  (url "http://snow2.s3-website-us-east-1.amazonaws.com/industria/struct.tgz")
+  (library
+    (path "weinholt/struct/der.sld")
+    (version "1.0")
+    (homepage "https://weinholt.se/industria/")
+    (maintainers "Seth Alves <seth@hungry.com>")
+    (authors "Göran Weinholt <goran@weinholt.se>")
+    (description "Distinguished Encoding Rules (DER)")
+    (license mit)
+    (depends))
+  (library
+    (path "weinholt/struct/pack.sld")
+    (version "1.0")
+    (homepage "https://weinholt.se/industria/")
+    (maintainers "Seth Alves <seth@hungry.com>")
+    (authors "Göran Weinholt <goran@weinholt.se>")
+    (description
+      "Syntax for packing and unpacking C structs using bytevectors")
+    (license mit)
+    (depends))
+  (library
+    (path "weinholt/struct/pack-aux.sld")
+    (version "1.0")
+    (homepage "https://weinholt.se/industria/")
+    (maintainers "Seth Alves <seth@hungry.com>")
+    (authors "Göran Weinholt <goran@weinholt.se>")
+    (description
+      "Auxiliary library for (weinholt struct). Please don't use this library directly.")
+    (license mit)
+    (depends)))

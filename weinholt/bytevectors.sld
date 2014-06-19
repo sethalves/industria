@@ -19,10 +19,10 @@
 ;; LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 ;; FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 ;; DEALINGS IN THE SOFTWARE.
-#!r6rs
+;; #!r6rs
 
-(library (weinholt bytevectors)
-  (export bytevector-append
+(define-library (weinholt bytevectors)
+  (export ;; bytevector-append
           bytevectors-length
           bytevector-concatenate
           subbytevector
@@ -30,16 +30,22 @@
           bytevector-u8-index-right
           bytevector->uint
           uint->bytevector
-          bytevector=?/constant-time)
-  (import (rnrs))
+          bytevector=?/constant-time
+          bytevector->u8-list)
+  (import (scheme base)
+          (scheme case-lambda)
+          (srfi 60)
+          (weinholt r6rs-compatibility))
+  (begin
 
-  (define (bytevector-append . bvs)
-    ;; TODO: is the other version faster?
-    (call-with-bytevector-output-port
-      (lambda (p)
-        (for-each (lambda (bv)
-                    (put-bytevector p bv))
-                  bvs))))
+  ;; (define (bytevector-append . bvs)
+  ;;   ;; TODO: is the other version faster?
+  ;;   (call-with-bytevector-output-port
+  ;;     (lambda (p)
+  ;;       (for-each (lambda (bv)
+  ;;                   (put-bytevector p bv))
+  ;;                 bvs))))
+
 
   (define (bytevectors-length bvs)
     (do ((l bvs (cdr l))
@@ -99,13 +105,13 @@
   (define (bytevector->uint bv)
     (if (zero? (bytevector-length bv))
         0
-        (bytevector-uint-ref bv 0 (endianness big) (bytevector-length bv))))
+        (bytevector-uint-ref bv 0 'big (bytevector-length bv))))
 
   (define (uint->bytevector int)
     (if (zero? int)
-        #vu8()
-        (let ((ret (make-bytevector (div (bitwise-and -8 (+ 7 (bitwise-length int))) 8))))
-          (bytevector-uint-set! ret 0 int (endianness big) (bytevector-length ret))
+        (make-bytevector 0) ;; #vu8()
+        (let ((ret (make-bytevector (quotient (bitwise-and -8 (+ 7 (bitwise-length int))) 8))))
+          (bytevector-uint-set! ret 0 int 'big (bytevector-length ret))
           ret)))
 
   ;; Drop-in replacement for bytevector=? that does not leak
@@ -119,16 +125,25 @@
       (and (= len (bytevector-length bv2))
            (if (even? len)
                (do ((i 0 (+ i 2))
-                    (diff 0 (fxior diff
-                                   (fxxor
+                    (diff 0 (bitwise-ior diff
+                                   (bitwise-xor
                                     (bytevector-u16-native-ref bv1 i)
                                     (bytevector-u16-native-ref bv2 i)))))
-                   ((= i len) (fxzero? diff)))
+                   ((= i len) (= diff 0)))
                (do ((i 0 (+ i 1))
-                    (diff 0 (fxior diff
-                                   (fxxor
+                    (diff 0 (bitwise-ior diff
+                                   (bitwise-xor
                                     (bytevector-u8-ref bv1 i)
                                     (bytevector-u8-ref bv2 i)))))
-                   ((= i len) (fxzero? diff)))))))
+                   ((= i len) (= diff 0)))))))
 
-  )
+
+  (define (bytevector->u8-list bv)
+    (let loop ((i 0)
+               (lst (list)))
+      (if (= i (bytevector-length bv))
+          (reverse lst)
+          (loop (+ i 1)
+                (cons (bytevector-u8-ref bv i) lst)))))
+
+  ))

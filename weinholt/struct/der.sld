@@ -18,7 +18,7 @@
 ;; LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 ;; FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 ;; DEALINGS IN THE SOFTWARE.
-#!r6rs
+;; #!r6rs
 
 ;; Distinguished Encoding Rules (DER)
 
@@ -26,7 +26,7 @@
 
 ;; TODO: output
 
-(library (weinholt struct der)
+(define-library (weinholt struct der)
   (export decode translate
           data-type
           data-start-index
@@ -35,11 +35,21 @@
           
           bit-string-length bit-string-unused bit-string->bytevector
           bit-string->integer bit-string-bit-set?)
-  (import (rnrs)
-          (only (srfi :1 lists) take)
-          (srfi :19 time)
-          (srfi :26 cut)
-          (weinholt bytevectors))
+  (import (scheme base)
+          (scheme cxr)
+          (scheme case-lambda)
+          ;; (only (srfi :1 lists) take)
+          ;; (srfi :19 time)
+          ;; (srfi :26 cut)
+          (srfi 1)
+          (srfi 19)
+          (srfi 26)
+          (srfi 60)
+          (weinholt r6rs-compatibility)
+          (weinholt bytevectors)
+          )
+
+  (begin
 
   (define-syntax print
     (syntax-rules ()
@@ -52,21 +62,26 @@
 
 ;;; Bit strings
   
-  (define-record-type bit-string
-    (fields length unused >bytevector))
+  (define-record-type <bit-string>
+    (make-bit-string length unused >bytevector)
+    bit-string?
+    (length bit-string-length)
+    (unused bit-string-unused)
+    (>bytevector bit-string->bytevector))
 
   (define (bit-string->integer bs)
-    (bitwise-arithmetic-shift-right
-     (bytevector-uint-ref (bit-string->bytevector bs) 0 (endianness big)
+    (arithmetic-shift
+     (bytevector-uint-ref (bit-string->bytevector bs) 0 'big
                           (bit-string-length bs))
-     (bit-string-unused bs)))
+     (- (bit-string-unused bs))))
 
   (define (bit-string-bit-set? bs i)
-    (let ((byte (fxarithmetic-shift-right i 3))
-          (index (fxand i 7)))
-      (and (fx<? byte (bit-string-length bs))
-           (fxbit-set? (bytevector-u8-ref (bit-string->bytevector bs) byte)
-                       (fx- 7 index)))))
+    (let ((byte (arithmetic-shift i -3))
+          (index (bitwise-and i 7)))
+      (and (< byte (bit-string-length bs))
+           (bitwise-bit-set?
+            (bytevector-u8-ref (bit-string->bytevector bs) byte)
+            (- 7 index)))))
   
 ;;; The code that follows reads DER encoded data from bytevectors and
 ;;; turns it into a parse tree.
@@ -74,30 +89,30 @@
   (define (get-type bv start end)
     (let* ((t (bytevector-u8-ref bv start))
            (class (vector-ref '#(universal application context private)
-                              (fxbit-field t 6 8)))
-           (constructed (fxbit-set? t 5))
-           (number (fxbit-field t 0 5)))
-      (if (fx=? number #b11111)
+                              (bitwise-bit-field t 6 8)))
+           (constructed (bitwise-bit-set? t 5))
+           (number (bitwise-bit-field t 0 5)))
+      (if (= number #b11111)
           (let lp ((i (+ start 1)) (number 0))
             (unless (< i end)
               (error 'get-type "went over a cliff"))
             (let* ((v (bytevector-u8-ref bv i))
-                   (number (bitwise-ior (bitwise-arithmetic-shift-left number 7)
-                                        (fxand v #x7f))))
-              (if (fxbit-set? v 7)
+                   (number (bitwise-ior (arithmetic-shift number 7)
+                                        (bitwise-and v #x7f))))
+              (if (bitwise-bit-set? v 7)
                   (lp (+ i 1) number)
                   (values constructed class number (+ i 1)))))
           (values constructed class number (+ start 1)))))
 
   (define (get-length bv start end)
     (let ((b1 (bytevector-u8-ref bv start)))
-      (cond ((fx=? b1 #b10000000)       ;indefinite form
+      (cond ((= b1 #b10000000)       ;indefinite form
              (error 'get-length "indefinite length encountered in DER coding"))
-            ((fxbit-set? b1 7)          ;long form
-             (let ((extra (fxbit-field b1 0 7)))
+            ((bitwise-bit-set? b1 7)          ;long form
+             (let ((extra (bitwise-bit-field b1 0 7)))
                (unless (< (+ start extra 1) end)
                  (error 'get-length "went over a cliff"))
-               (let ((len (bytevector-uint-ref bv (+ start 1) (endianness big)
+               (let ((len (bytevector-uint-ref bv (+ start 1) 'big
                                                extra)))
                  (when (< len 128)
                    (error 'get-length "unnecessarily long length in DER coding" len))
@@ -116,7 +131,7 @@
                     "illegal boolean encoding in DER mode" v)))))
 
   (define (get-integer bv start length)
-    (bytevector-uint-ref bv start (endianness big) length))
+    (bytevector-uint-ref bv start 'big length))
 
   (define (get-T61String bv start length)
     ;; T.61 TeletexString. The world's most complicated character
@@ -161,7 +176,7 @@
   (define (get-UniversalString bv start length)
     (let ((ret (make-bytevector length)))
       (bytevector-copy! bv start ret 0 length)
-      (utf16->string ret (endianness big)))) ;FIXME: verify this
+      (utf16->string ret 'big))) ;FIXME: verify this
 
   (define (get-GraphicString bv start length)
     ;; TODO: this is not really UTF-8
@@ -237,9 +252,9 @@
             (unless (< i (+ start length))
               (error 'decode "went over a cliff"))
             (let* ((v (bytevector-u8-ref bv i))
-                   (number (bitwise-ior (bitwise-arithmetic-shift-left number 7)
-                                        (fxand v #x7f))))
-              (if (fxbit-set? v 7)
+                   (number (bitwise-ior (arithmetic-shift number 7)
+                                        (bitwise-and v #x7f))))
+              (if (bitwise-bit-set? v 7)
                   (lp (+ i 1) number)
                   (cons number (get (+ i 1))))))))
     (define (solve-oid p)
@@ -566,3 +581,4 @@
               (data-value data))
              (else
               (error 'translate "unexpected type" type (car data))))))))
+)
