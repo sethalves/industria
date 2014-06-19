@@ -56,6 +56,8 @@
    bytevector-s64-native-set!
 
    native-endianness
+
+   call-with-bytevector-output-port
    )
   (import (scheme base)
           (srfi 60))
@@ -561,5 +563,10 @@
 
     (define (native-endianness) 'big)
 
+
+    (define (call-with-bytevector-output-port func)
+      (let ((out-bv (open-output-bytevector)))
+        (func out-bv)
+        (get-output-bytevector out-bv)))
 
     ))

@@ -7,6 +7,21 @@
     (trust 1.0))
   (package
     (name ())
+    (url "http://snow2.s3-website-us-east-1.amazonaws.com/industria/archive.tgz")
+    (size 11287)
+    (checksum (md5 "68e3513791f48fbec21c01077e549887"))
+    (library
+      (name (weinholt archive tar))
+      (path "weinholt/archive/tar.sld")
+      (version "1.0")
+      (homepage "https://weinholt.se/industria/")
+      (maintainers "Seth Alves <seth@hungry.com>")
+      (authors "Göran Weinholt <goran@weinholt.se>")
+      (description "Procedures that read Tape ARchives")
+      (license mit)
+      (depends (srfi 13) (srfi 19) (srfi 60) (weinholt r6rs-compatibility))))
+  (package
+    (name ())
     (url "http://snow2.s3-website-us-east-1.amazonaws.com/industria/bytevectors.tgz")
     (size 7703)
     (checksum (md5 "14ce1f26aa089dc7a387ab1e587cd5b5"))

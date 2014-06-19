@@ -1,0 +1,13 @@
+(package
+  (name ())
+  (url "http://snow2.s3-website-us-east-1.amazonaws.com/industria/archive.tgz")
+  (library
+    (path "weinholt/archive/tar.sld")
+    (version "1.0")
+    (homepage "https://weinholt.se/industria/")
+    (maintainers "Seth Alves <seth@hungry.com>")
+    (authors "Göran Weinholt <goran@weinholt.se>")
+    (description "Procedures that read Tape ARchives")
+    (license mit)
+    (depends))
+)

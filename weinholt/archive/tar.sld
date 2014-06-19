@@ -18,7 +18,7 @@
 ;; LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 ;; FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 ;; DEALINGS IN THE SOFTWARE.
-#!r6rs
+;; #!r6rs
 
 ;; Procedures that read Tape ARchives
 
@@ -53,7 +53,7 @@
       
 ;; http://www.gnu.org/software/tar/manual/html_section/Formats.html
 
-(library (weinholt archive tar)
+(define-library (weinholt archive tar)
   (export get-header-record
           header-name header-mode header-uid header-gid
           header-size header-mtime header-chksum
@@ -64,9 +64,14 @@
           header-chksum-ok? header-chksum-calculate
 
           extract-to-port skip-file)
-  (import (rnrs)
-          (only (srfi :13 strings) string-trim-both)
-          (only (srfi :19 time) time-monotonic->date make-time))
+  (import (scheme base)
+          (only (srfi 13) string-trim-both)
+          (only (srfi 19) time-monotonic->date make-time)
+          (only (srfi 60) bitwise-and)
+          (weinholt r6rs-compatibility)
+          )
+
+  (begin
 
   (define-syntax trace
     (syntax-rules ()
@@ -84,8 +89,8 @@
          (let lp ((i i) (max max))
            (unless (zero? max)
              (let ((b (bytevector-u8-ref bv i)))
-               (unless (fxzero? b)
-                 (put-u8 r b)
+               (unless (zero? b)
+                 (write-u8 r b)
                  (lp (+ i 1) (- max 1))))))))))
 
   (define (get-octal bv i max)
@@ -95,7 +100,7 @@
     (make-bytevector 512 0))
 
   (define (zero-record? rec)
-    (bytevector=? rec zero-record))
+    (equal? rec zero-record))
 
   (define (premature-eof who tarport)
     (error who "premature end of archive" tarport))
@@ -118,7 +123,7 @@
     (let ((t (integer->char
               (bytevector-u8-ref rec 156))))
       (case t
-        ((#\0 #\nul) 'regular)
+        ((#\0 #\null) 'regular)
         ((#\1) 'hardlink)
         ((#\2) 'symlink)
         ((#\3) 'char)
@@ -138,11 +143,11 @@
 
   (define (header-chksum-calculate rec)
     (define (sum bv start end)
-      (do ((i start (fx+ i 1))
-           (sum 0 (fx+ sum (bytevector-u8-ref bv i))))
-          ((fx=? i end) sum)))
-    (fx+ (sum rec 0 148)
-         (fx+ 256 #;(sum #vu8(32 32 32 32 32 32 32 32) 0 8)
+      (do ((i start (+ i 1))
+           (sum 0 (+ sum (bytevector-u8-ref bv i))))
+          ((= i end) sum)))
+    (+ (sum rec 0 148)
+         (+ 256 #;(sum #u8(32 32 32 32 32 32 32 32) 0 8)
               (sum rec 156 512))))
 
   (define (header-chksum-ok? rec)
@@ -156,7 +161,7 @@
   
   (define (get-header-record tarport)
     (define who 'get-header-record)
-    (let ((rec (get-bytevector-n tarport 512)))
+    (let ((rec (read-bytevector 512 tarport)))
       (trace "get-header-record: `" (utf8->string rec) "'")
       (cond ((eof-object? rec) (eof-object))
             ((zero-record? rec) (eof-object))
@@ -173,34 +178,38 @@
            " from " tarport " to " destport)
     (let*-values (((size) (header-size header))
                   ((padded) (bitwise-and -512 (+ 511 size)))
-                  ((blocks trail) (div-and-mod size 512)))
+                  ((blocks trail)
+                   (values (quotient size 512) (remainder size 512))
+                   ))
       (trace blocks " blocks and " trail " bytes trailing")
       (do ((buf (make-bytevector 512))
            (blocks blocks (- blocks 1)))
           ((zero? blocks)
-           (let ((r (get-bytevector-n! tarport buf 0 512)))
+           (let ((r (read-bytevector! buf tarport 0 512)))
              (trace "read block: " r " (last)")
              (unless (eqv? r 512) (premature-eof who tarport))
-             (put-bytevector destport buf 0 trail)))
-        (let ((r (get-bytevector-n! tarport buf 0 512)))
+             (write-bytevector buf destport 0 trail)))
+        (let ((r (read-bytevector! buf tarport 0 512)))
           (unless (eqv? r 512) (premature-eof who tarport))
           (trace "read block: " r)
-          (put-bytevector destport buf)))))
+          (write-bytevector buf destport)))))
 
   (define (skip-file tarport header)
     (define who 'skip-file)
     (trace "Skipping " (header-name header) " from " tarport)
-    (let ((blocks (div (+ 511 (header-size header)) 512)))
+    (let ((blocks (quotient (+ 511 (header-size header)) 512)))
       (trace blocks " blocks")
       (cond ((eq? 'hardlink (header-typeflag header)))
-            ((and (port-has-port-position? tarport)
-                  (port-has-set-port-position!? tarport))
-             (set-port-position! tarport (+ (port-position tarport)
-                                            (* 512 blocks))))
+            ;; ((and (port-has-port-position? tarport)
+            ;;       (port-has-set-port-position!? tarport))
+            ;;  (set-port-position! tarport (+ (port-position tarport)
+            ;;                                 (* 512 blocks))))
             (else
              (do ((buf (make-bytevector 512))
                   (blocks blocks (- blocks 1)))
                  ((zero? blocks))
-               (let ((r (get-bytevector-n! tarport buf 0 512)))
+               (let ((r (read-bytevector! buf tarport 0 512)))
                  (unless (eqv? r 512) (premature-eof who tarport))
                  (trace "read block: " r))))))))
+
+)
