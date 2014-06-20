@@ -18,11 +18,11 @@
 ;; LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 ;; FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 ;; DEALINGS IN THE SOFTWARE.
-#!r6rs
+;; #!r6rs
 
 ;; The MD5 Message-Digest Algorithm. RFC 1321
 
-(library (weinholt crypto md5)
+(define-library (weinholt crypto md5)
   (export make-md5 md5-update! md5-finish! md5-clear!
           md5 md5-copy md5-finish
           md5-length
@@ -30,24 +30,45 @@
           md5->bytevector md5->string
           md5-hash=? md5-96-hash=?
           hmac-md5)
-  (import (only (srfi :1 lists) iota)
-          (except (rnrs) bitwise-rotate-bit-field))
+  (import (scheme base)
+          (scheme case-lambda)
+          (only (srfi 1) iota)
+          ;; (except (rnrs) bitwise-rotate-bit-field)
+          (srfi 60)
+          (weinholt bytevectors)
+          (weinholt r6rs-compatibility)
+          )
+
+  (cond-expand
+   (chicken
+    ;; without this, chicken has trouble with large numbers near the
+    ;; fixnum limit -- for example 9223372036854775808
+    (import (numbers)))
+   (else))
+
+  (begin
 
   (define (md5-length) 16)
 
-  (define (vector-copy x) (vector-map (lambda (i) i) x))
+  ;; (define (vector-copy x) (vector-map (lambda (i) i) x))
 
   (define (rol32 n count)
-    (let ((field1 (bitwise-and #xffffffff (bitwise-arithmetic-shift-left n count)))
-          (field2 (bitwise-arithmetic-shift-right n (- 32 count))))
+    (let ((field1 (bitwise-and #xffffffff (arithmetic-shift n count)))
+          (field2 (arithmetic-shift n (- count 32))))
       (bitwise-ior field1 field2)))
 
-  (define-record-type md5state
-    (fields (immutable H)               ;Hash
-            (immutable W)               ;temporary data
-            (immutable m)               ;unprocessed data
-            (mutable pending)           ;length of unprocessed data
-            (mutable processed)))       ;length of processed data
+  (define-record-type <md5state>
+    (make-md5state H ;Hash
+                   W ;temporary data
+                   m ;unprocessed data
+                   pending ;length of unprocessed data
+                   processed) ;length of processed data
+    md5state?
+    (H md5state-H)
+    (W md5state-W)
+    (m md5state-m)
+    (pending md5state-pending md5state-pending-set!)
+    (processed md5state-processed md5state-processed-set!))
 
   (define (make-md5)
     (let ((H (list->vector initial-hash))
@@ -91,9 +112,9 @@
     (let ((v (list->vector
               (map (lambda (t)
                      (cond ((<= 0 t 15)  t)
-                           ((<= 16 t 31) (mod (+ (* 5 t) 1) 16))
-                           ((<= 32 t 47) (mod (+ (* 3 t) 5) 16))
-                           (else         (mod (* 7 t) 16))))
+                           ((<= 16 t 31) (modulo (+ (* 5 t) 1) 16))
+                           ((<= 32 t 47) (modulo (+ (* 3 t) 5) 16))
+                           (else         (modulo (* 7 t) 16))))
                    (iota 64)))))
       (lambda (t) (vector-ref v t))))
 
@@ -126,7 +147,7 @@
     ;; Copy the message block
     (do ((t 0 (+ t 4)))
         ((= t (* 4 16)))
-      (bytevector-u32-native-set! W t (bytevector-u32-ref m (+ t offset) (endianness little))))
+      (bytevector-u32-native-set! W t (bytevector-u32-ref m (+ t offset) 'little)))
     ;; Do the hokey pokey
     (let lp ((A (vector-ref H 0))
              (B (vector-ref H 1))
@@ -177,9 +198,8 @@
                   ;; Add more pending data.
                   (let ((added (min (- 64 (md5state-pending state))
                                     (- end offset))))
-                    (bytevector-copy! data offset
-                                      m (md5state-pending state)
-                                      added)
+                    (bytevector-copy! m (md5state-pending state) data offset
+                                      (+ offset added))
                     (md5state-pending-set! state (+ added (md5state-pending state)))
                     (lp (+ offset added))))
                  (else
@@ -199,24 +219,20 @@
           (pending (+ (md5state-pending state) 1)))
       (bytevector-u8-set! m (md5state-pending state) #x80)
       (cond ((> pending 56)
-             (bytevector-copy! zero-block 0
-                               m pending
-                               (- 64 pending))
+             (bytevector-copy! m pending zero-block 0 (- 64 pending))
              (md5-transform! (md5state-H state)
                              (md5state-W state)
                              m
                              0)
              (bytevector-fill! m 0))
             (else
-             (bytevector-copy! zero-block 0
-                               m pending
-                               (- 64 pending))))
+             (bytevector-copy! m pending zero-block 0 (- 64 pending))))
       ;; Number of bits in the data
       (bytevector-u64-set! m 56
                            (* (+ (md5state-processed state)
                                  (- pending 1))
                               8)
-                           (endianness little))
+                           'little)
       (md5-transform! (md5state-H state)
                       (md5state-W state)
                       m
@@ -240,7 +256,7 @@
         ((= i len))
       (bytevector-u32-set! bv (+ off (* 4 i))
                            (vector-ref (md5state-H state) i)
-                           (endianness little))))
+                           'little)))
 
   (define (md5-copy-hash! state bv off)
     (copy-hash! state bv off 4))
@@ -265,12 +281,12 @@
   ;; terminate early in order to not leak timing information. Assumes
   ;; that the bytevector's length is ok.
   (define (cmp state bv len)
-    (do ((i 0 (fx+ i 1))
+    (do ((i 0 (+ i 1))
          (diff 0 (+ diff
                     (bitwise-xor
-                     (bytevector-u32-ref bv (* 4 i) (endianness little))
+                     (bytevector-u32-ref bv (* 4 i) 'little)
                      (vector-ref (md5state-H state) i)))))
-        ((fx=? i len)
+        ((= i len)
          (zero? diff))))
 
   (define (md5-hash=? state bv) (cmp state bv 4))
@@ -283,12 +299,12 @@
         (apply hmac-md5 (md5->bytevector (md5 secret)) data)
         (let ((k-ipad (make-bytevector 64 0))
               (k-opad (make-bytevector 64 0)))
-          (bytevector-copy! secret 0 k-ipad 0 (bytevector-length secret))
-          (bytevector-copy! secret 0 k-opad 0 (bytevector-length secret))
-          (do ((i 0 (fx+ i 1)))
-              ((fx=? i 64))
-            (bytevector-u8-set! k-ipad i (fxxor #x36 (bytevector-u8-ref k-ipad i)))
-            (bytevector-u8-set! k-opad i (fxxor #x5c (bytevector-u8-ref k-opad i))))
+          (bytevector-copy! k-ipad 0 secret 0 (bytevector-length secret))
+          (bytevector-copy! k-opad 0 secret 0 (bytevector-length secret))
+          (do ((i 0 (+ i 1)))
+              ((= i 64))
+            (bytevector-u8-set! k-ipad i (bitwise-xor #x36 (bytevector-u8-ref k-ipad i)))
+            (bytevector-u8-set! k-opad i (bitwise-xor #x5c (bytevector-u8-ref k-opad i))))
           (let ((state (make-md5)))
             (md5-update! state k-ipad)
             (for-each (lambda (d) (md5-update! state d)) data)
@@ -299,3 +315,4 @@
               (md5-update! state digest)
               (md5-finish! state)
               state))))))
+  )

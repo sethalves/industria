@@ -18,49 +18,54 @@
 ;; LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 ;; FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 ;; DEALINGS IN THE SOFTWARE.
-#!r6rs
+;; #!r6rs
 
 ;; Universally Unique IDentifiers (RFC 4122).
 
-(library (weinholt crypto uuid)
+(define-library (weinholt crypto uuid)
   (export nil-uuid
           uuid-namespace-dns uuid-namespace-url
           uuid-namespace-oid uuid-namespace-x.500
           time-uuid random-uuid md5-uuid sha-1-uuid
           string->uuid uuid->string
           uuid-info)
-  (import (rnrs)
-          (srfi :19 time)
+  (import (scheme base)
+          (scheme case-lambda)
+          (srfi 19)
+          (srfi 60)
+          (weinholt r6rs-compatibility)
           (weinholt bytevectors)
           (weinholt crypto entropy)
           (weinholt crypto md5)
           (weinholt crypto sha-1)
           (weinholt struct pack))
 
+  (begin
+
   (define nil-uuid
-    #vu8(0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0))
+    #u8(0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0))
 
   (define uuid-namespace-dns
-    #vu8(#x6b #xa7 #xb8 #x10  #x9d #xad  #x11 #xd1
+    #u8(#x6b #xa7 #xb8 #x10  #x9d #xad  #x11 #xd1
               #x80 #xb4 #x00 #xc0 #x4f #xd4 #x30 #xc8))
 
   (define uuid-namespace-url
-    #vu8(#x6b #xa7 #xb8 #x11  #x9d #xad  #x11 #xd1
+    #u8(#x6b #xa7 #xb8 #x11  #x9d #xad  #x11 #xd1
               #x80 #xb4 #x00 #xc0 #x4f #xd4 #x30 #xc8))
 
   (define uuid-namespace-oid
-    #vu8(#x6b #xa7 #xb8 #x12  #x9d #xad  #x11 #xd1
+    #u8(#x6b #xa7 #xb8 #x12  #x9d #xad  #x11 #xd1
               #x80 #xb4 #x00 #xc0 #x4f #xd4 #x30 #xc8))
 
   (define uuid-namespace-x.500
-    #vu8(#x6b #xa7 #xb8 #x14  #x9d #xad  #x11 #xd1
+    #u8(#x6b #xa7 #xb8 #x14  #x9d #xad  #x11 #xd1
               #x80 #xb4 #x00 #xc0 #x4f #xd4 #x30 #xc8))
 
   (define (%random-node-id)
     ;; Generate a random node address and set the multicast bit to
     ;; show that it is random.
     (let ((r (make-random-bytevector 48/8)))
-      (pack! "C" r 0 (fxior (unpack "C" r) #b1))
+      (pack! "C" r 0 (bitwise-ior (unpack "C" r) #b1))
       r))
 
   ;; Time-based UUID.
@@ -82,15 +87,15 @@
                  (set! *ieee-address* (%random-node-id)))
                *ieee-address*)
               (else
-               (assertion-violation
+               (error
                 'time-uuid "This is not a valid node-id argument"
                 node-id))))
       (define (init-clock-seq)
         (set! *clock-seq* (random-integer (expt 2 14)))
         (set! *count* 0))
       (define (increment-clock-seq)
-        (set! *clock-seq* (mod (+ *clock-seq* 1)
-                               (expt 2 14)))
+        (set! *clock-seq* (modulo (+ *clock-seq* 1)
+                                  (expt 2 14)))
         (set! *count* 0))
       (define (get-time)
         (let retry ((attempts 0))
@@ -131,8 +136,8 @@
                                        (date->time-utc
                                         (make-date 0 0 0 0 15 10 1582 0))))
                   ;; 100ns ticks since Oct 15, 1582.
-                  (t (+ (div (+ (time-nanosecond td)
-                                (* (time-second td) (expt 10 9)))
+                  (t (+ (quotient (+ (time-nanosecond td)
+                                     (* (time-second td) (expt 10 9)))
                              100)
                         *count*))
                   (version 1))
@@ -140,10 +145,10 @@
               (pack "!LSSS"
                     (bitwise-bit-field t 0 32)
                     (bitwise-bit-field t 32 48)
-                    (fxior (bitwise-bit-field t 48 60)
-                           (fxarithmetic-shift-left version 12))
-                    (fxior (fxarithmetic-shift-left #b10 14)
-                           (fxand *clock-seq* #x3fff)))
+                    (bitwise-ior (bitwise-bit-field t 48 60)
+                                 (arithmetic-shift version 12))
+                    (bitwise-ior (arithmetic-shift #b10 14)
+                                 (bitwise-and *clock-seq* #x3fff)))
               addr)))))))
 
   ;; Name-based UUID with MD5.
@@ -169,24 +174,24 @@
                             node1 node2)
                   (unpack "!LSSSSL" u)))
       (pack "!LSSSSL" time-low time-mid
-            (fxior (fxarithmetic-shift-left version 12)
-                   (fxand time-hi/version #xfff))
-            (fxior (fxarithmetic-shift-left #b10 14)
-                   (fxand clk-seq/res #x3fff))
+            (bitwise-ior (arithmetic-shift version 12)
+                         (bitwise-and time-hi/version #xfff))
+            (bitwise-ior (arithmetic-shift #b10 14)
+                         (bitwise-and clk-seq/res #x3fff))
             node1 node2)))
 
   ;; Convert a string with a UUID to a bytevector.
   (define (string->uuid s)
     (define (assvio s)
-      (assertion-violation 'string->uuid "This is not a valid UUID" s))
+      (error 'string->uuid "This is not a valid UUID" s))
     (define (dehex s i)
       (let ((i (char->integer (string-ref s i))))
-        (cond ((fx<=? (char->integer #\0) i (char->integer #\9))
-               (fx- i (char->integer #\0)))
-              ((fx<=? (char->integer #\A) i (char->integer #\F))
-               (fx- i (fx- (char->integer #\A) #xa)))
-              ((fx<=? (char->integer #\a) i (char->integer #\f))
-               (fx- i (fx- (char->integer #\a) #xa)))
+        (cond ((<= (char->integer #\0) i (char->integer #\9))
+               (- i (char->integer #\0)))
+              ((<= (char->integer #\A) i (char->integer #\F))
+               (- i (- (char->integer #\A) #xa)))
+              ((<= (char->integer #\a) i (char->integer #\f))
+               (- i (- (char->integer #\a) #xa)))
               (else #f))))
     (let ((u (make-bytevector 16)))
       (let lp ((si 0) (ui 0) (upper-nibble #f))
@@ -199,10 +204,10 @@
                  (cond ((= ui (bytevector-length u))
                         (assvio s))
                        (upper-nibble
-                        (bytevector-u8-set! u ui (fxior upper-nibble n))
+                        (bytevector-u8-set! u ui (bitwise-ior upper-nibble n))
                         (lp (+ si 1) (+ ui 1) #f))
                        (else
-                        (lp (+ si 1) ui (fxarithmetic-shift-left n 4))))))
+                        (lp (+ si 1) ui (arithmetic-shift n 4))))))
               (else
                (lp (+ si 1) ui upper-nibble))))))
 
@@ -216,37 +221,39 @@
           (case si
             ((36) #f)
             ((8 13 18 23)
-             (put-char p #\-)
+             (write-char #\- p)
              (lp (+ si 1) ui))
             (else
              (let ((b (bytevector-u8-ref u ui)))
-               (put-char p (string-ref hex (fxarithmetic-shift-right b 4)))
-               (put-char p (string-ref hex (fxand b #b1111)))
+               (write-char (string-ref hex (arithmetic-shift b -4)) p)
+               (write-char (string-ref hex (bitwise-and b #b1111)) p)
                (lp (+ si 2) (+ ui 1)))))))))
 
   ;; Extract as much information from the UUID as possible.
   (define (uuid-info u)
-    (define asl bitwise-arithmetic-shift-left)
-    (define fxasr fxarithmetic-shift-right)
+    (define asl arithmetic-shift)
     (let ((v (bytevector-u8-ref u 8)))
-      (cond ((eqv? (fxand v #b10000000) #b00000000)
+      (cond ((eqv? (bitwise-and v #b10000000) #b00000000)
              (if (equal? u nil-uuid)
                  '((variant . nil))
                  '((variant . ncs))))
-            ((eqv? (fxand v #b11000000) #b10000000)
+            ((eqv? (bitwise-and v #b11000000) #b10000000)
              (let-values (((time-low time-mid time-hi/version clk-seq/res)
                            (unpack "!LSSS6x" u)))
-               (let* ((vers (fxasr time-hi/version 12))
+               (let* ((vers (arithmetic-shift time-hi/version -12))
                       (info `((variant . rfc4122)
                               (version . ,vers)
-                              (reserved-field . ,(fxasr clk-seq/res 14)))))
+                              (reserved-field . ,(arithmetic-shift
+                                                  clk-seq/res -14)))))
                  (case vers
                    ((1)
-                    (let ((t (bitwise-ior (asl (fxand time-hi/version #xfff) 48)
+                    (let ((t (bitwise-ior (asl (bitwise-and time-hi/version #xfff) 48)
                                            (asl time-mid 32)
                                            time-low))
-                          (clock-sequence (fxand clk-seq/res #x3fff)))
-                      (let-values (((s ns) (div-and-mod t (/ (expt 10 9) 100))))
+                          (clock-sequence (bitwise-and clk-seq/res #x3fff)))
+                      (let-values (((s ns) (values
+                                            (quotient  t (/ (expt 10 9) 100))
+                                            (modulo t (/ (expt 10 9) 100)))))
                         (let ((time (add-duration
                                      (date->time-utc
                                       (make-date 0 0 0 0 15 10 1582 0))
@@ -257,7 +264,7 @@
                             (clock-sequence . ,clock-sequence)
                             (node . ,(subbytevector u 10 16))
                             ;; Check the multicast bit
-                            (node-random? . ,(fxbit-set? (bytevector-u8-ref u 10) 0)))))))
+                            (node-random? . ,(bitwise-bit-set? (bytevector-u8-ref u 10) 0)))))))
                    ;; TODO: DCE contains a POSIX UID
                    ((2) `(,@info (version-name . dce-security)))
                    ((3) `(,@info (version-name . md5)))
@@ -265,10 +272,11 @@
                    ((5) `(,@info (version-name . sha-1)))
                    (else
                     info)))))
-            ((eqv? (fxand v #b11100000) #b11000000)
+            ((eqv? (bitwise-and v #b11100000) #b11000000)
              ;; TODO: these apparently have all sorts of subtypes
              '((variant . microsoft-com)))
-            ((eqv? (fxand v #b11110000) #b11100000)
+            ((eqv? (bitwise-and v #b11110000) #b11100000)
              '((variant . reserved)))
             (else
              '((variant . unknown)))))))
+  )

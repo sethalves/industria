@@ -18,7 +18,7 @@
 ;; LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 ;; FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 ;; DEALINGS IN THE SOFTWARE.
-#!r6rs
+;; #!r6rs
 
 ;; Entropic helpers.
 
@@ -31,16 +31,21 @@
 ;; TODO: Should probably not use srfi-27 but something that works the
 ;; same everywhere.
 
-(library (weinholt crypto entropy)
+(define-library (weinholt crypto entropy)
   (export make-random-bytevector
           bytevector-randomize!
           random-positive-byte
           string-random-case
-          (rename (rand random-integer)))
-  (import (rnrs)
-          (only (srfi :13 strings) string-map)
-          (srfi :26 cut)
-          (srfi :27 random-bits))
+          random-integer)
+  (import (scheme base)
+          (scheme char)
+          (scheme file)
+          (scheme case-lambda)
+          (only (srfi 13) string-map)
+          (srfi 26)
+          (except (srfi 27) random-integer))
+
+  (begin
 
   (define make-random-bytevector
     (lambda (n)
@@ -50,9 +55,7 @@
 
   (define /dev/urandom
     (and (file-exists? "/dev/urandom")
-         (open-file-input-port "/dev/urandom"
-                               (file-options)
-                               (buffer-mode none))))
+         (open-binary-input-file "/dev/urandom")))
 
   ;; The same interface as bytevector-copy! except with no source
   ;; arguments.
@@ -65,7 +68,7 @@
            (let lp ((start start)
                     (count count))
              (unless (zero? count)
-               (let ((n (get-bytevector-n! /dev/urandom bv start count)))
+               (let ((n (read-bytevector! bv /dev/urandom start count)))
                  (lp (+ start n) (- count n)))))))
         (let* ((s (make-random-source))
                (make-int (random-source-make-integers s)))
@@ -83,23 +86,23 @@
     (if /dev/urandom
         (lambda ()
           (let lp ()
-            (let ((v (get-u8 /dev/urandom)))
+            (let ((v (read-u8 /dev/urandom)))
               (if (zero? v) (lp) v))))
         (let* ((s (make-random-source))
                (make-int (random-source-make-integers s)))
           (random-source-randomize! s)
           (lambda () (+ 1 (make-int 254))))))
   
-  (define rand
+  (define random-integer
     (let ((s (make-random-source)))
       (random-source-randomize! s)
       (random-source-make-integers s)))
 
-  (define (random-boolean) (zero? (rand 2)))
+  (define (random-boolean) (zero? (random-integer 2)))
   
   (define (string-random-case name)
     (string-map (cut (if (random-boolean) char-upcase char-downcase) <>)
                 name))
 
 
-  )
+  ))

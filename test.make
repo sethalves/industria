@@ -56,4 +56,5 @@ clean:
 #		$(snow2) uninstall $(TEST_DEPS); \
 #	done
 	rm -rf srfi
+	rm -rf weinholt
 	make clean-extra

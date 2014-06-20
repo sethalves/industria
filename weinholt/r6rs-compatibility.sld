@@ -2,13 +2,15 @@
   (export
    assert
    bitwise-length
-   bytevector-uint-set!
-   bytevector-uint-ref
    utf16->string
    for-all
    exists
    bitwise-bit-set?
    bitwise-bit-field
+
+   bytevector-fill!
+
+   native-endianness
 
    bytevector-ieee-single-native-ref
    bytevector-ieee-single-ref
@@ -55,9 +57,13 @@
    bytevector-u64-native-set!
    bytevector-s64-native-set!
 
-   native-endianness
+   bytevector-uint-ref
+   bytevector-sint-ref
+   bytevector-uint-set!
+   bytevector-sint-set!
 
    call-with-bytevector-output-port
+   call-with-string-output-port
    )
   (import (scheme base)
           (srfi 60))
@@ -85,57 +91,6 @@
                  (arithmetic-shift bits -1)))
           ((zero? bits)
            result)))
-
-
-    ;; from sagittarius
-    (define (bytevector-uint-set! bv index val endien size)
-      (cond ((= val 0)
-             (let ((end (+ index size)))
-               (let loop ((i index))
-                 (cond ((>= i end) #t)
-                       (else
-                        (bytevector-u8-set! bv i 0)
-                        (loop (+ i 1)))))))
-            ((< 0 val (expt 256 size))
-             (cond ((eq? endien 'big)
-                    (let ((start (- (+ index size) 1)))
-                      (let loop ((i start) (acc val))
-                        (cond ((< i index) #t)
-                              (else
-                               ;; mod256 -> bitwise-and
-                               (bytevector-u8-set! bv i (bitwise-and acc 255))
-                               ;; div256 -> bitwise-arithmetic-shift
-                               (loop (- i 1) (arithmetic-shift acc -8)))))))
-                   ((eq? endien 'little)
-                    (let ((end (+ index size)))
-                      (let loop ((i index) (acc val))
-                        (cond ((>= i end) #t)
-                              (else
-                               ;; mod256 -> bitwise-and
-                               (bytevector-u8-set! bv i (bitwise-and acc 255))
-                               ;; div256 -> bitwise-arithmetic-shift
-                               (loop (+ i 1) (arithmetic-shift acc -8)))))))))
-            (else
-             (error "bytevector-uint-set! value out of range"
-                    (list bv index val endien size)))))
-
-
-    ;; from sagittarius
-    (define (bytevector-uint-ref bv index endien size)
-      (cond ((eq? endien 'big)
-             (let ((end (+ index size)))
-               (let loop ((i index) (acc 0))
-                 (if (>= i end)
-                     acc
-                     (loop (+ i 1) (+ (* 256 acc) (bytevector-u8-ref bv i)))))))
-            ((eq? endien 'little)
-             (let loop ((i (+ index size -1)) (acc 0))
-               (if (< i index)
-                   acc
-                   (loop (- i 1) (+ (* 256 acc) (bytevector-u8-ref bv i))))))
-            (else
-             (error "bytevector-uint-ref expected endianness"
-                    (list bv index endien size)))))
 
 
     (define (utf16->string bv endian)
@@ -284,6 +239,16 @@
          (- ei2))))
 
 
+    (define (bytevector-fill! bv n)
+      (let loop ((i 0))
+        (cond ((= i (bytevector-length bv)) bv)
+              (else
+               (bytevector-u8-set! bv i n)
+               (loop (+ i 1))))))
+
+
+    (define (native-endianness) 'big)
+
     (define (ieee-754->number bits)
       (cond ;; scheme2js can't parse the +inf.0
        ;; ((= bits #x7f800000) +inf.0)
@@ -354,13 +319,13 @@
 
 
     (define (bytevector-ieee-single-native-ref bv k)
-      (bytevector-ieee-single-ref bv k 'big))
+      (bytevector-ieee-single-ref bv k (native-endianness)))
 
     (define (bytevector-ieee-single-ref bv k endianness)
       (ieee-754->number (bytevector-u32-ref bv k endianness)))
 
     (define (bytevector-ieee-double-native-ref bv k)
-      (bytevector-ieee-double-ref bv k 'big))
+      (bytevector-ieee-double-ref bv k (native-endianness)))
 
     (define (bytevector-ieee-double-ref bv k endianness)
       ;; XXX ieee-754->number isn't right
@@ -368,13 +333,13 @@
 
 
     (define (bytevector-ieee-single-native-set! bv k x)
-      (bytevector-ieee-single-set! bv k x 'big))
+      (bytevector-ieee-single-set! bv k x (native-endianness)))
 
     (define (bytevector-ieee-single-set! bv k n endianness)
       (bytevector-u32-set! bv k (number->ieee-754 n) endianness))
 
     (define (bytevector-ieee-double-native-set! bv k x)
-      (bytevector-ieee-double-set! bv k x 'big))
+      (bytevector-ieee-double-set! bv k x (native-endianness)))
 
     (define (bytevector-ieee-double-set! bv k n endianness)
       ;; XXX ieee-754->number isn't right
@@ -431,10 +396,10 @@
             (- (+ (bitwise-and (bitwise-not n) #xffff) 1)))))
 
     (define (bytevector-u16-native-ref bv k)
-      (bytevector-u16-ref bv k 'big))
+      (bytevector-u16-ref bv k (native-endianness)))
 
     (define (bytevector-s16-native-ref bv k)
-      (bytevector-s16-ref bv k 'big))
+      (bytevector-s16-ref bv k (native-endianness)))
 
     (define (bytevector-u16-set! bv k n endianness)
       (case endianness
@@ -454,10 +419,10 @@
        endianness))
 
     (define (bytevector-u16-native-set! bv k n)
-      (bytevector-u16-set! bv k n 'big))
+      (bytevector-u16-set! bv k n (native-endianness)))
 
     (define (bytevector-s16-native-set! bv k n)
-      (bytevector-s16-set! bv k n 'big))
+      (bytevector-s16-set! bv k n (native-endianness)))
 
 
     (define (bytevector-u32-ref bv k endianness)
@@ -479,10 +444,10 @@
 
 
     (define (bytevector-u32-native-ref bv k)
-      (bytevector-u32-ref bv k 'big))
+      (bytevector-u32-ref bv k (native-endianness)))
 
     (define (bytevector-s32-native-ref bv k)
-      (bytevector-s32-ref bv k 'big))
+      (bytevector-s32-ref bv k (native-endianness)))
 
     (define (bytevector-u32-set! bv k n endianness)
       (case endianness
@@ -505,10 +470,10 @@
 
 
     (define (bytevector-u32-native-set! bv k n)
-      (bytevector-u32-set! bv k n 'big))
+      (bytevector-u32-set! bv k n (native-endianness)))
 
     (define (bytevector-s32-native-set! bv k n)
-      (bytevector-s32-set! bv k n 'big))
+      (bytevector-s32-set! bv k n (native-endianness)))
 
 
 
@@ -530,10 +495,10 @@
             (- (+ (bitwise-and (bitwise-not n) #xffffffffffffffff) 1)))))
 
     (define (bytevector-u64-native-ref bv k)
-      (bytevector-u64-ref bv k 'big))
+      (bytevector-u64-ref bv k (native-endianness)))
 
     (define (bytevector-s64-native-ref bv k)
-      (bytevector-s64-ref bv k 'big))
+      (bytevector-s64-ref bv k (native-endianness)))
 
     (define (bytevector-u64-set! bv k n endianness)
       (case endianness
@@ -555,18 +520,98 @@
        endianness))
 
     (define (bytevector-u64-native-set! bv k n)
-      (bytevector-u64-set! bv k n 'big))
+      (bytevector-u64-set! bv k n (native-endianness)))
 
     (define (bytevector-s64-native-set! bv k n)
-      (bytevector-s64-set! bv k n 'big))
+      (bytevector-s64-set! bv k n (native-endianness)))
 
 
-    (define (native-endianness) 'big)
+    ;; from sagittarius
+    (define (bytevector-uint-ref bv index endien size)
+      (cond ((eq? endien 'big)
+             (let ((end (+ index size)))
+               (let loop ((i index) (acc 0))
+                 (if (>= i end)
+                     acc
+                     (loop (+ i 1)
+                           (+ (* 256 acc) (bytevector-u8-ref bv i)))))))
+            ((eq? endien 'little)
+             (let loop ((i (+ index size -1)) (acc 0))
+               (if (< i index)
+                   acc
+                   (loop (- i 1) (+ (* 256 acc) (bytevector-u8-ref bv i))))))
+            (else
+             (error 'bytevector-uint-ref "expected endianness" endien))))
+
+
+    ;; from sagittarius
+    (define (bytevector-sint-ref bv index endien size)
+      (cond ((eq? endien 'big)
+             (if (> (bytevector-u8-ref bv index) 127)
+                 (- (bytevector-uint-ref bv index endien size) (expt 256 size))
+                 (bytevector-uint-ref bv index endien size)))
+            ((eq? endien 'little)
+             (if (> (bytevector-u8-ref bv (+ index size -1)) 127)
+                 (- (bytevector-uint-ref bv index endien size) (expt 256 size))
+                 (bytevector-uint-ref bv index endien size)))
+            (else
+             (error 'bytevector-uint-ref "expected endianness" endien))))
+
+
+    ;; from sagittarius
+    (define (bytevector-uint-set! bv index val endien size)
+      (cond ((= val 0)
+             (let ((end (+ index size)))
+               (let loop ((i index))
+                 (cond ((>= i end) #t)
+                       (else
+                        (bytevector-u8-set! bv i 0)
+                        (loop (+ i 1)))))))
+            ((< 0 val (expt 256 size))
+             (cond ((eq? endien 'big)
+                    (let ((start (- (+ index size) 1)))
+                      (let loop ((i start) (acc val))
+                        (cond ((< i index) #t)
+                              (else
+                               ;; mod256 -> bitwise-and
+                               (bytevector-u8-set! bv i (bitwise-and acc 255))
+                               ;; div256 -> bitwise-arithmetic-shift
+                               (loop (- i 1) (arithmetic-shift acc -8)))))))
+                   ((eq? endien 'little)
+                    (let ((end (+ index size)))
+                      (let loop ((i index) (acc val))
+                        (cond ((>= i end) #t)
+                              (else
+                               ;; mod256 -> bitwise-and
+                               (bytevector-u8-set! bv i (bitwise-and acc 255))
+                               ;; div256 -> bitwise-arithmetic-shift
+                               (loop (+ i 1) (arithmetic-shift acc -8)))))))))
+            (else
+             (error 'bytevector-uint-set! "value out of range" val))))
+
+
+    ;; from sagittarius
+    (define (bytevector-sint-set! bv index val endien size)
+      (let* ((p-bound (expt 2 (- (* size 8) 1)))
+             (n-bound (- (+ p-bound 1))))
+        (if (< n-bound val p-bound)
+            (if (> val 0)
+                (bytevector-uint-set! bv index val endien size)
+                (bytevector-uint-set! bv index (+ val (expt 256 size))
+                                      endien size))
+            (error 'bytevector-sint-set! "value out of range" val))))
+
 
 
     (define (call-with-bytevector-output-port func)
       (let ((out-bv (open-output-bytevector)))
         (func out-bv)
         (get-output-bytevector out-bv)))
+
+
+    (define (call-with-string-output-port func)
+      (let ((out-bv (open-output-string)))
+        (func out-bv)
+        (get-output-string out-bv)))
 
     ))

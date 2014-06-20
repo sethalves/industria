@@ -1,1 +1,0 @@
-../../../../weinholt/struct/der.sld
