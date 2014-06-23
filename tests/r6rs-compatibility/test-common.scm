@@ -25,4 +25,8 @@
      (or (= (bytevector-u16-native-ref bv 2) 5334)
          (= (bytevector-u16-native-ref bv 2) 54804)))
 
+
+   (= (bitwise-reverse-bit-field 3456 0 64) 121597189939003392)
+
+
    #t))

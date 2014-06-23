@@ -33,4 +33,12 @@
     (authors "Göran Weinholt <goran@weinholt.se>")
     (description "Universally Unique IDentifiers (RFC 4122)")
     (license mit))
+  (library
+    (path "weinholt/crypto/crc.sld")
+    (version "1.0")
+    (homepage "https://weinholt.se/industria/")
+    (maintainers "Seth Alves <seth@hungry.com>")
+    (authors "Göran Weinholt <goran@weinholt.se>")
+    (description "Procedures that calculate Cyclic Redundancy Codes")
+    (license mit))
 )

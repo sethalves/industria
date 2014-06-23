@@ -8,8 +8,8 @@
   (package
     (name ())
     (url "http://snow2.s3-website-us-east-1.amazonaws.com/industria/crypto.tgz")
-    (size 45079)
-    (checksum (md5 "d5fbeaee47d7a500cbec776c2a9d5270"))
+    (size 53783)
+    (checksum (md5 "b368fb8df23239b30d6882b7d692d632"))
     (library
       (name (weinholt crypto entropy))
       (path "weinholt/crypto/entropy.sld")
@@ -61,7 +61,21 @@
         (weinholt crypto entropy)
         (weinholt crypto md5)
         (weinholt crypto sha-1)
-        (weinholt struct pack))))
+        (weinholt struct pack)))
+    (library
+      (name (weinholt crypto crc))
+      (path "weinholt/crypto/crc.sld")
+      (version "1.0")
+      (homepage "https://weinholt.se/industria/")
+      (maintainers "Seth Alves <seth@hungry.com>")
+      (authors "Göran Weinholt <goran@weinholt.se>")
+      (description "Procedures that calculate Cyclic Redundancy Codes")
+      (license mit)
+      (depends
+        (srfi 1)
+        (srfi 60)
+        (weinholt bytevectors)
+        (weinholt r6rs-compatibility))))
   (package
     (name ())
     (url "http://snow2.s3-website-us-east-1.amazonaws.com/industria/archive.tgz")

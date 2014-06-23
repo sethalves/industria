@@ -64,8 +64,11 @@
 
    call-with-bytevector-output-port
    call-with-string-output-port
+
+   bitwise-reverse-bit-field
    )
   (import (scheme base)
+          (scheme write)
           (srfi 60))
 
   (cond-expand
@@ -613,5 +616,58 @@
       (let ((out-bv (open-output-string)))
         (func out-bv)
         (get-output-string out-bv)))
+
+
+    (define (bitwise-reverse-bit-field v start end)
+      (do ((i start (+ i 1))
+           (ret 0 (if (bitwise-bit-set? v i)
+                      (bitwise-ior
+                       ret (arithmetic-shift 1 (- end i 1)))
+                      ret)))
+          ((= i end)
+           (bitwise-ior (arithmetic-shift ret start)
+                        (copy-bit-field v 0 start end)))
+
+;        (display "i=") (write i) (newline)
+;        (display "ret=") (write ret) (newline)
+;        (display "A=") (write (arithmetic-shift ret start)) (newline)
+;        (display "B=") (write (copy-bit-field v 0 start end)) (newline)
+
+
+        ))
+
+
+    ;; (define (bitwise-reverse-bit-field v start end)
+    ;;   (display "----\n")
+    ;;   (display "v=") (write v) (newline)
+    ;;   (display "start=") (write start) (newline)
+    ;;   (display "end=") (write end) (newline)
+    ;;   (let ((r (bitwise-reverse-bit-field* v start end)))
+    ;;     (display "r=") (write r) (newline)
+    ;;     r))
+
+
+
+    ;; from sagittarius
+    ;; (define (bitwise-reverse-bit-field ei1 ei2 ei3)
+    ;;   (let* ((n ei1)
+    ;;          (start ei2)
+    ;;          (end ei3)
+    ;;          (width (- end start)))
+    ;;     (if (positive? width)
+    ;;         (let loop ((reversed 0)
+    ;;                    (field (bitwise-bit-field n start end))
+    ;;                    (width width))
+    ;;           (if (zero? width)
+    ;;               (copy-bit-field n reversed start end)
+    ;;               (if (zero? (bitwise-and field 1))
+    ;;                   (loop (arithmetic-shift reversed 1)
+    ;;                         (arithmetic-shift field -1)
+    ;;                         (- width 1))
+    ;;                   (loop (bitwise-ior
+    ;;                          (arithmetic-shift reversed 1) 1)
+    ;;                         (arithmetic-shift field -1)
+    ;;                         (- width 1)))))
+    ;;         n)))
 
     ))

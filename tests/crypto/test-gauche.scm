@@ -17,6 +17,7 @@ exec gosh \
         (weinholt crypto md5)
         (weinholt crypto sha-1)
         (weinholt crypto uuid)
+        (weinholt crypto crc)
         )
 (include "test-common.scm")
 (display (main-program))
