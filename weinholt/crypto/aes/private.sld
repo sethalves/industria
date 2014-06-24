@@ -62,7 +62,7 @@
   (define (GF* a b)
     (if (or (zero? a) (zero? b))
         0
-        (alog (mod (+ (ilog a) (ilog b)) 255))))
+        (alog (modulo (+ (ilog a) (ilog b)) 255))))
 
   (define (GFexpt a n)
     (if (zero? n) 1
@@ -71,7 +71,7 @@
   (define (GFinv a)
     (if (zero? a)
         0
-        (alog (mod (- (ilog a)) 255))))
+        (alog (modulo (- (ilog a)) 255))))
 
   ;; What follows is from Rijndael
 
@@ -82,10 +82,10 @@
          (i 0 (+ i 1))
          (tmp 0 (bitwise-ior (arithmetic-shift
                               (bitwise-xor (bit b i)
-                                           (bit b (mod (+ i 4) 8))
-                                           (bit b (mod (+ i 5) 8))
-                                           (bit b (mod (+ i 6) 8))
-                                           (bit b (mod (+ i 7) 8))
+                                           (bit b (modulo (+ i 4) 8))
+                                           (bit b (modulo (+ i 5) 8))
+                                           (bit b (modulo (+ i 6) 8))
+                                           (bit b (modulo (+ i 7) 8))
                                            (bit c i))
                               i)
                              tmp)))

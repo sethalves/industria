@@ -8,8 +8,8 @@
   (package
     (name ())
     (url "http://snow2.s3-website-us-east-1.amazonaws.com/industria/crypto.tgz")
-    (size 53783)
-    (checksum (md5 "b368fb8df23239b30d6882b7d692d632"))
+    (size 79900)
+    (checksum (md5 "ec4af0adf26c38f748bf5011016d38a5"))
     (library
       (name (weinholt crypto entropy))
       (path "weinholt/crypto/entropy.sld")
@@ -75,7 +75,33 @@
         (srfi 1)
         (srfi 60)
         (weinholt bytevectors)
-        (weinholt r6rs-compatibility))))
+        (weinholt r6rs-compatibility)))
+    (library
+      (name (weinholt crypto aes))
+      (path "weinholt/crypto/aes.sld")
+      (version "1.0")
+      (homepage "https://weinholt.se/industria/")
+      (maintainers "Seth Alves <seth@hungry.com>")
+      (authors "Göran Weinholt <goran@weinholt.se>")
+      (description "Rijndael cipher as parameterized by AES")
+      (license mit)
+      (depends (srfi 1)))
+    (library
+      (name (weinholt crypto aes private))
+      (path "weinholt/crypto/aes/private.sld")
+      (version "1.0")
+      (homepage "https://weinholt.se/industria/")
+      (maintainers "Seth Alves <seth@hungry.com>")
+      (authors
+        "Göran Weinholt <goran@weinholt.se>"
+        "Erik De Win"
+        "Antoon Bosselaers"
+        "Servaas Vanderberghe"
+        "Peter De Gersem"
+        "Joos Vandewalle")
+      (description "GF(2⁸)")
+      (license mit)
+      (depends (srfi 60) (weinholt r6rs-compatibility))))
   (package
     (name ())
     (url "http://snow2.s3-website-us-east-1.amazonaws.com/industria/archive.tgz")
@@ -95,7 +121,7 @@
     (name ())
     (url "http://snow2.s3-website-us-east-1.amazonaws.com/industria/bytevectors.tgz")
     (size 7703)
-    (checksum (md5 "14ce1f26aa089dc7a387ab1e587cd5b5"))
+    (checksum (md5 "d913ec55342779f3958c9f3f51880eab"))
     (library
       (name (weinholt bytevectors))
       (path "weinholt/bytevectors.sld")
@@ -109,8 +135,8 @@
   (package
     (name ())
     (url "http://snow2.s3-website-us-east-1.amazonaws.com/industria/r6rs-compatibility.tgz")
-    (size 4631)
-    (checksum (md5 "7d1d7862371eef9fdef1079fdba3f4d0"))
+    (size 24599)
+    (checksum (md5 "de3fb9d9de3a18167fa03943cca21aee"))
     (library
       (name (weinholt r6rs-compatibility))
       (path "weinholt/r6rs-compatibility.sld")
@@ -124,8 +150,8 @@
   (package
     (name ())
     (url "http://snow2.s3-website-us-east-1.amazonaws.com/industria/struct.tgz")
-    (size 54295)
-    (checksum (md5 "7ecd0260e2451dc3b2eddc46d6a02c2c"))
+    (size 45591)
+    (checksum (md5 "3d6389011ba5f01194cfa0dfb3765001"))
     (library
       (name (weinholt struct der))
       (path "weinholt/struct/der.sld")
@@ -152,7 +178,7 @@
       (description
         "Syntax for packing and unpacking C structs using bytevectors")
       (license mit)
-      (depends (weinholt struct pack-aux)))
+      (depends (weinholt r6rs-compatibility) (weinholt struct pack-aux)))
     (library
       (name (weinholt struct pack-aux))
       (path "weinholt/struct/pack-aux.sld")
@@ -163,4 +189,4 @@
       (description
         "Auxiliary library for (weinholt struct). Please don't use this library directly.")
       (license mit)
-      (depends))))
+      (depends (srfi 60)))))

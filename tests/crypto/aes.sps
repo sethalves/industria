@@ -1,4 +1,4 @@
-#!/usr/bin/env scheme-script
+;; #!/usr/bin/env scheme-script
 ;; -*- mode: scheme; coding: utf-8 -*- !#
 ;; Copyright © 2009, 2010, 2011 Göran Weinholt <goran@weinholt.se>
 
@@ -19,19 +19,13 @@
 ;; LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 ;; FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 ;; DEALINGS IN THE SOFTWARE.
-#!r6rs
-
-(import (weinholt bytevectors)
-        (weinholt crypto aes)
-        (srfi :78 lightweight-testing)
-        (rnrs))
-
+;; #!r6rs
 
 ;;; Appendix A in FIPS-197
 
 (check (expand-aes-key
         ;; 128-bit key
-        #vu8(#x2b #x7e #x15 #x16 #x28 #xae #xd2 #xa6 #xab #xf7 #x15 #x88 #x09 #xcf #x4f #x3c))
+        #u8(#x2b #x7e #x15 #x16 #x28 #xae #xd2 #xa6 #xab #xf7 #x15 #x88 #x09 #xcf #x4f #x3c))
        =>
        '#(#x2b7e1516
           #x28aed2a6
@@ -81,7 +75,7 @@
 
 (check (expand-aes-key
         ;; 192-bit key
-        #vu8(#x8e #x73 #xb0 #xf7 #xda #x0e #x64 #x52 #xc8 #x10 #xf3 #x2b
+        #u8(#x8e #x73 #xb0 #xf7 #xda #x0e #x64 #x52 #xc8 #x10 #xf3 #x2b
                   #x80 #x90 #x79 #xe5 #x62 #xf8 #xea #xd2 #x52 #x2c #x6b #x7b))
        =>
        '#(#x8e73b0f7
@@ -140,7 +134,7 @@
 
 (check (expand-aes-key 
         ;; 256-bit key
-        #vu8(#x60 #x3d #xeb #x10 #x15 #xca #x71 #xbe #x2b #x73 #xae #xf0 #x85 #x7d #x77 #x81
+        #u8(#x60 #x3d #xeb #x10 #x15 #xca #x71 #xbe #x2b #x73 #xae #xf0 #x85 #x7d #x77 #x81
                   #x1f #x35 #x2c #x07 #x3b #x61 #x08 #xd7 #x2d #x98 #x10 #xa3 #x09 #x14 #xdf #xf4))
        =>
        '#(#x603deb10
@@ -222,29 +216,31 @@
     (clear-aes-schedule! sched)
     ret))
 
-(check (encrypt #vu8(#x32 #x43 #xf6 #xa8 #x88 #x5a #x30 #x8d #x31 #x31 #x98 #xa2 #xe0 #x37 #x07 #x34)
-                #vu8(#x2b #x7e #x15 #x16 #x28 #xae #xd2 #xa6 #xab #xf7 #x15 #x88 #x09 #xcf #x4f #x3c))
-       => #vu8(#x39 #x25 #x84 #x1d #x02 #xdc #x09 #xfb #xdc #x11 #x85 #x97 #x19 #x6a #x0b #x32))
+(check (encrypt #u8(#x32 #x43 #xf6 #xa8 #x88 #x5a #x30 #x8d #x31 #x31 #x98 #xa2 #xe0 #x37 #x07 #x34)
+                #u8(#x2b #x7e #x15 #x16 #x28 #xae #xd2 #xa6 #xab #xf7 #x15 #x88 #x09 #xcf #x4f #x3c))
+       => #u8(#x39 #x25 #x84 #x1d #x02 #xdc #x09 #xfb #xdc #x11 #x85 #x97 #x19 #x6a #x0b #x32))
 
-(check (decrypt #vu8(#x39 #x25 #x84 #x1d #x02 #xdc #x09 #xfb #xdc #x11 #x85 #x97 #x19 #x6a #x0b #x32)
-                #vu8(#x2b #x7e #x15 #x16 #x28 #xae #xd2 #xa6 #xab #xf7 #x15 #x88 #x09 #xcf #x4f #x3c))
-       => #vu8(#x32 #x43 #xf6 #xa8 #x88 #x5a #x30 #x8d #x31 #x31 #x98 #xa2 #xe0 #x37 #x07 #x34))
+(check (decrypt #u8(#x39 #x25 #x84 #x1d #x02 #xdc #x09 #xfb #xdc #x11 #x85 #x97 #x19 #x6a #x0b #x32)
+                #u8(#x2b #x7e #x15 #x16 #x28 #xae #xd2 #xa6 #xab #xf7 #x15 #x88 #x09 #xcf #x4f #x3c))
+       => #u8(#x32 #x43 #xf6 #xa8 #x88 #x5a #x30 #x8d #x31 #x31 #x98 #xa2 #xe0 #x37 #x07 #x34))
 
 ;;; Appendix C in FIPS-197
 
+
+(define (num->bv n len)
+  (let ((bv (make-bytevector (/ len 8))))
+    (bytevector-uint-set! bv 0 n 'big (/ len 8))
+    bv))
+
+
 (define-syntax test
-  (lambda (x)
-    (define (num->bv n len)
-      (let ((bv (make-bytevector (/ len 8))))
-        (bytevector-uint-set! bv 0 n (endianness big) (/ len 8))
-        bv))
-    (syntax-case x ()
-      ((_ plaintext keylen key output)
-       (with-syntax ((pt (num->bv (syntax->datum #'plaintext) 128))
-                     (k (num->bv (syntax->datum #'key) (syntax->datum #'keylen)))
-                     (out (num->bv (syntax->datum #'output) 128)))
-         #'(begin (check (encrypt pt k) => out)
-                  (check (decrypt (encrypt pt k) k) => pt)))))))
+  (syntax-rules ()
+    ((_ plaintext keylen key output)
+     (let ((pt (num->bv plaintext 128))
+           (k (num->bv key keylen))
+           (out (num->bv output 128)))
+       (check (encrypt pt k) => out)
+       (check (decrypt (encrypt pt k) k) => pt)))))
 
 (test #x00112233445566778899aabbccddeeff
       128 #x000102030405060708090a0b0c0d0e0f
@@ -312,7 +308,7 @@
 ;;; CTR mode from the above URL
 
 (define (ctr ctr key)
-  (define pt #vu8(#x6b #xc1 #xbe #xe2 #x2e #x40 #x9f #x96 #xe9 #x3d #x7e #x11 #x73 #x93 #x17 #x2a 
+  (define pt #u8(#x6b #xc1 #xbe #xe2 #x2e #x40 #x9f #x96 #xe9 #x3d #x7e #x11 #x73 #x93 #x17 #x2a 
                        #xae #x2d #x8a #x57 #x1e #x03 #xac #x9c #x9e #xb7 #x6f #xac #x45 #xaf #x8e #x51 
                        #x30 #xc8 #x1c #x46 #xa3 #x5c #xe4 #x11 #xe5 #xfb #xc1 #x19 #x1a #x0a #x52 #xef 
                        #xf6 #x9f #x24 #x45 #xdf #x4f #x9b #x17 #xad #x2b #x41 #x7b #xe6 #x6c #x37 #x10))
@@ -321,27 +317,27 @@
     ret))
 
 (check (ctr #xf0f1f2f3f4f5f6f7f8f9fafbfcfdfeff
-            #vu8(#x2b #x7e #x15 #x16 #x28 #xae #xd2 #xa6 #xab #xf7 #x15 #x88 #x09 #xcf #x4f #x3c))
+            #u8(#x2b #x7e #x15 #x16 #x28 #xae #xd2 #xa6 #xab #xf7 #x15 #x88 #x09 #xcf #x4f #x3c))
        =>
-       #vu8(#x87 #x4d #x61 #x91 #xb6 #x20 #xe3 #x26 #x1b #xef #x68 #x64 #x99 #x0d #xb6 #xce 
+       #u8(#x87 #x4d #x61 #x91 #xb6 #x20 #xe3 #x26 #x1b #xef #x68 #x64 #x99 #x0d #xb6 #xce 
                  #x98 #x06 #xf6 #x6b #x79 #x70 #xfd #xff #x86 #x17 #x18 #x7b #xb9 #xff #xfd #xff 
                  #x5a #xe4 #xdf #x3e #xdb #xd5 #xd3 #x5e #x5b #x4f #x09 #x02 #x0d #xb0 #x3e #xab 
                  #x1e #x03 #x1d #xda #x2f #xbe #x03 #xd1 #x79 #x21 #x70 #xa0 #xf3 #x00 #x9c #xee))
 
 (check (ctr #xf0f1f2f3f4f5f6f7f8f9fafbfcfdfeff
-            #vu8(#x8e #x73 #xb0 #xf7 #xda #x0e #x64 #x52 #xc8 #x10 #xf3 #x2b #x80 #x90 #x79 #xe5 
+            #u8(#x8e #x73 #xb0 #xf7 #xda #x0e #x64 #x52 #xc8 #x10 #xf3 #x2b #x80 #x90 #x79 #xe5 
                       #x62 #xf8 #xea #xd2 #x52 #x2c #x6b #x7b))
        =>
-       #vu8(#x1a #xbc #x93 #x24 #x17 #x52 #x1c #xa2 #x4f #x2b #x04 #x59 #xfe #x7e #x6e #x0b 
+       #u8(#x1a #xbc #x93 #x24 #x17 #x52 #x1c #xa2 #x4f #x2b #x04 #x59 #xfe #x7e #x6e #x0b 
                  #x09 #x03 #x39 #xec #x0a #xa6 #xfa #xef #xd5 #xcc #xc2 #xc6 #xf4 #xce #x8e #x94 
                  #x1e #x36 #xb2 #x6b #xd1 #xeb #xc6 #x70 #xd1 #xbd #x1d #x66 #x56 #x20 #xab #xf7 
                  #x4f #x78 #xa7 #xf6 #xd2 #x98 #x09 #x58 #x5a #x97 #xda #xec #x58 #xc6 #xb0 #x50))
 
 (check (ctr #xf0f1f2f3f4f5f6f7f8f9fafbfcfdfeff
-            #vu8(#x60 #x3d #xeb #x10 #x15 #xca #x71 #xbe #x2b #x73 #xae #xf0 #x85 #x7d #x77 #x81 
+            #u8(#x60 #x3d #xeb #x10 #x15 #xca #x71 #xbe #x2b #x73 #xae #xf0 #x85 #x7d #x77 #x81 
                       #x1f #x35 #x2c #x07 #x3b #x61 #x08 #xd7 #x2d #x98 #x10 #xa3 #x09 #x14 #xdf #xf4))
        =>
-       #vu8(#x60 #x1e #xc3 #x13 #x77 #x57 #x89 #xa5 #xb7 #xa7 #xf5 #x04 #xbb #xf3 #xd2 #x28 
+       #u8(#x60 #x1e #xc3 #x13 #x77 #x57 #x89 #xa5 #xb7 #xa7 #xf5 #x04 #xbb #xf3 #xd2 #x28 
                  #xf4 #x43 #xe3 #xca #x4d #x62 #xb5 #x9a #xca #x84 #xe9 #x90 #xca #xca #xf5 #xc5 
                  #x2b #x09 #x30 #xda #xa2 #x3d #xe9 #x4c #xe8 #x70 #x17 #xba #x2d #x84 #x98 #x8d 
                  #xdf #xc9 #xc5 #x8d #xb6 #x7a #xad #xa6 #x13 #xc2 #xdd #x08 #x45 #x79 #x41 #xa6))
@@ -357,7 +353,7 @@
     (aes-cbc-decrypt! ret 0 scr 0 (bytevector-length ret)
                       (reverse-aes-schedule (expand-aes-key (uint->bytevector key)))
                       (uint->bytevector iv))
-    (list (bytevector=? scr pt)
+    (list (equal? scr pt)
           (bytevector->uint ret))))
 
 ;; #1
@@ -369,7 +365,7 @@
 ;; #2
 (check (cbc128 #xc286696d887c9aa0611bbb3e2025a45a
                #x562e17996d093d28ddb3ba695a2e6f58
-               #vu8(#x00 #x01 #x02 #x03 #x04 #x05 #x06 #x07 #x08 #x09 #x0a #x0b #x0c #x0d #x0e #x0f #x10 #x11
+               #u8(#x00 #x01 #x02 #x03 #x04 #x05 #x06 #x07 #x08 #x09 #x0a #x0b #x0c #x0d #x0e #x0f #x10 #x11
                          #x12 #x13 #x14 #x15 #x16 #x17 #x18 #x19 #x1a #x1b #x1c #x1d #x1e #x1f))
        => '(#t #xd296cd94c2cccf8a3a863028b5e1dc0a7586602d253cfff91b8266bea6d61ab1))
 
@@ -382,7 +378,7 @@
 ;; #4
 (check (cbc128 #x56e47a38c5598974bc46903dba290349
                #x8ce82eefbea0da3c44699ed7db51b7d9
-               #vu8(#xa0 #xa1 #xa2 #xa3 #xa4 #xa5 #xa6 #xa7 #xa8 #xa9 #xaa #xab #xac #xad #xae
+               #u8(#xa0 #xa1 #xa2 #xa3 #xa4 #xa5 #xa6 #xa7 #xa8 #xa9 #xaa #xab #xac #xad #xae
                          #xaf #xb0 #xb1 #xb2 #xb3 #xb4 #xb5 #xb6 #xb7 #xb8 #xb9 #xba #xbb #xbc
                          #xbd #xbe #xbf #xc0 #xc1 #xc2 #xc3 #xc4 #xc5 #xc6 #xc7 #xc8 #xc9 #xca
                          #xcb #xcc #xcd #xce #xcf #xd0 #xd1 #xd2 #xd3 #xd4 #xd5 #xd6 #xd7 #xd8

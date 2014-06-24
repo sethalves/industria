@@ -110,11 +110,9 @@
   (import (scheme base)
           (scheme case-lambda)
           (only (srfi 1) iota)
-          ;; (for (only (srfi :1 lists) iota) expand)
           (srfi 60)
           (weinholt bytevectors)
-          (weinholt r6rs-compatibility)
-          )
+          (weinholt r6rs-compatibility))
 
   (cond-expand
    (chicken

@@ -15,6 +15,7 @@ exec foment $0 "$@"
         (weinholt crypto sha-1)
         (weinholt crypto uuid)
         (weinholt crypto crc)
+        (weinholt crypto aes)
         )
 (include "test-common.scm")
 (display (main-program))

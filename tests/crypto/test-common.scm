@@ -1,9 +1,11 @@
 
 
-(include "md5.sps")
-(include "sha-1.sps")
-(include "uuid.sps")
-(include "crc.sps")
+;; (include "md5.sps")
+;; (include "sha-1.sps")
+;; (include "uuid.sps")
+;; (include "crc.sps")
+(include "aes.sps")
+
 
 
 (define (main-program)
