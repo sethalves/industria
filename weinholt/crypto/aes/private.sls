@@ -18,7 +18,7 @@
 ;; LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 ;; FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 ;; DEALINGS IN THE SOFTWARE.
-#!r6rs
+;; #!r6rs
 
 ;; Describes how the calculations in GF(2⁸) work, more or less:
 
@@ -31,17 +31,21 @@
 ;;     publisher = {Springer-Verlag}
 ;; }
 
-(library (weinholt crypto aes private)
+(define-library (weinholt crypto aes private)
   (export S-box inv-S-box GFexpt GF*)
-  (import (rnrs))
+  (import (scheme base)
+          (srfi 60)
+          (weinholt r6rs-compatibility))
+
+  (begin
 
   ;; Calculations in GF(2⁸)... all children need to learn their
   ;; GF(2⁸) logarithm tables by heart.
   (define alog
     (do ((alog (make-bytevector 256))
-         (p 1 (let ((p (fxxor p (fxarithmetic-shift-left p 1))))
-                (if (fxbit-set? p 8)
-                    (fxxor p #b100011011) ;subtract X⁸+X⁴+X³+X+1
+         (p 1 (let ((p (bitwise-xor p (arithmetic-shift p 1))))
+                (if (bitwise-bit-set? p 8)
+                    (bitwise-xor p #b100011011) ;subtract X⁸+X⁴+X³+X+1
                     p)))
          (i 0 (+ i 1)))
         ((= i 256)
@@ -73,18 +77,18 @@
 
   (define (affine-transform b)
     (define (bit x i)
-      (fxbit-field x i (+ i 1)))
+      (bitwise-bit-field x i (+ i 1)))
     (do ((c #b01100011)
          (i 0 (+ i 1))
-         (tmp 0 (fxior (fxarithmetic-shift-left
-                        (fxxor (bit b i)
-                               (bit b (mod (+ i 4) 8))
-                               (bit b (mod (+ i 5) 8))
-                               (bit b (mod (+ i 6) 8))
-                               (bit b (mod (+ i 7) 8))
-                               (bit c i))
-                        i)
-                       tmp)))
+         (tmp 0 (bitwise-ior (arithmetic-shift
+                              (bitwise-xor (bit b i)
+                                           (bit b (mod (+ i 4) 8))
+                                           (bit b (mod (+ i 5) 8))
+                                           (bit b (mod (+ i 6) 8))
+                                           (bit b (mod (+ i 7) 8))
+                                           (bit c i))
+                              i)
+                             tmp)))
         ((= i 8) tmp)))
 
   (define S-box                         ;for SubBytes
@@ -99,4 +103,6 @@
          (i 0 (+ i 1)))
         ((= i 256)
          (lambda (i) (bytevector-u8-ref invS i)))
-      (bytevector-u8-set! invS (affine-transform (GFinv i)) i))))
+      (bytevector-u8-set! invS (affine-transform (GFinv i)) i)))
+
+  ))
