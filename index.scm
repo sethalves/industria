@@ -7,9 +7,10 @@
     (trust 1.0))
   (package
     (name ())
+    (version "1.0")
     (url "http://snow2.s3-website-us-east-1.amazonaws.com/industria/crypto.tgz")
-    (size 79900)
-    (checksum (md5 "ec4af0adf26c38f748bf5011016d38a5"))
+    (size 82944)
+    (checksum (md5 "5eb6bfb9efa301bfffa9e80bc574391b"))
     (library
       (name (weinholt crypto entropy))
       (path "weinholt/crypto/entropy.sld")
@@ -85,7 +86,11 @@
       (authors "Göran Weinholt <goran@weinholt.se>")
       (description "Rijndael cipher as parameterized by AES")
       (license mit)
-      (depends (srfi 1)))
+      (depends
+        (weinholt crypto aes private)
+        (srfi 1)
+        (srfi 60)
+        (weinholt r6rs-compatibility)))
     (library
       (name (weinholt crypto aes private))
       (path "weinholt/crypto/aes/private.sld")
@@ -104,9 +109,10 @@
       (depends (srfi 60) (weinholt r6rs-compatibility))))
   (package
     (name ())
+    (version "1.0")
     (url "http://snow2.s3-website-us-east-1.amazonaws.com/industria/archive.tgz")
-    (size 11287)
-    (checksum (md5 "68e3513791f48fbec21c01077e549887"))
+    (size 12288)
+    (checksum (md5 "aeda5146e828036e7bb3c7daccff314e"))
     (library
       (name (weinholt archive tar))
       (path "weinholt/archive/tar.sld")
@@ -119,9 +125,10 @@
       (depends (srfi 13) (srfi 19) (srfi 60) (weinholt r6rs-compatibility))))
   (package
     (name ())
+    (version "1.0")
     (url "http://snow2.s3-website-us-east-1.amazonaws.com/industria/bytevectors.tgz")
-    (size 7703)
-    (checksum (md5 "d913ec55342779f3958c9f3f51880eab"))
+    (size 8704)
+    (checksum (md5 "16ec6d18c7b06905ab8e7bd38a53931c"))
     (library
       (name (weinholt bytevectors))
       (path "weinholt/bytevectors.sld")
@@ -134,9 +141,10 @@
       (depends (srfi 60) (weinholt r6rs-compatibility))))
   (package
     (name ())
+    (version "1.0")
     (url "http://snow2.s3-website-us-east-1.amazonaws.com/industria/r6rs-compatibility.tgz")
-    (size 24599)
-    (checksum (md5 "de3fb9d9de3a18167fa03943cca21aee"))
+    (size 25600)
+    (checksum (md5 "acd2e7167b82bf614e35a9e5fe87a669"))
     (library
       (name (weinholt r6rs-compatibility))
       (path "weinholt/r6rs-compatibility.sld")
@@ -149,9 +157,10 @@
       (depends (srfi 60))))
   (package
     (name ())
+    (version "1.0")
     (url "http://snow2.s3-website-us-east-1.amazonaws.com/industria/struct.tgz")
-    (size 45591)
-    (checksum (md5 "3d6389011ba5f01194cfa0dfb3765001"))
+    (size 47616)
+    (checksum (md5 "910939871a4430ec9715f9cb9f6e5ffa"))
     (library
       (name (weinholt struct der))
       (path "weinholt/struct/der.sld")
