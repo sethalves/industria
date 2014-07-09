@@ -20,6 +20,7 @@ exec gosh \
         (weinholt crypto crc)
         (weinholt crypto aes)
         (weinholt crypto arcfour)
+        (weinholt crypto blowfish)
         )
 (include "test-common.scm")
 (display (main-program))

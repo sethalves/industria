@@ -1,4 +1,4 @@
-#!/usr/bin/env scheme-script
+;; #!/usr/bin/env scheme-script
 ;; -*- mode: scheme; coding: utf-8 -*- !#
 ;; Copyright © 2009, 2010 Göran Weinholt <goran@weinholt.se>
 
@@ -19,19 +19,19 @@
 ;; LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 ;; FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 ;; DEALINGS IN THE SOFTWARE.
-#!r6rs
+;; #!r6rs
 
-(import (weinholt crypto blowfish)
-        (srfi :78 lightweight-testing)
-        (rnrs))
+;; (import (weinholt crypto blowfish)
+;;         (srfi :78 lightweight-testing)
+;;         (rnrs))
 
 ;; Test vectors from http://www.schneier.com/code/vectors.txt
 
 (define (test key* plaintext*)
   (let ((key (make-bytevector 8))
         (plaintext (make-bytevector 8)))
-    (bytevector-u64-set! key 0 key* (endianness big))
-    (bytevector-u64-set! plaintext 0 plaintext* (endianness big))
+    (bytevector-u64-set! key 0 key* 'big)
+    (bytevector-u64-set! plaintext 0 plaintext* 'big)
     (let ((enc (make-bytevector 8 0))
           (dec (make-bytevector 8 0)))
       (let* ((sched (expand-blowfish-key key))
@@ -41,7 +41,7 @@
         (clear-blowfish-schedule! sched)
         (clear-blowfish-schedule! desched)
         (and (equal? dec plaintext)
-             (bytevector-u64-ref enc 0 (endianness big)))))))
+             (bytevector-u64-ref enc 0 'big))))))
 
 (check (test #x0000000000000000 #x0000000000000000) => #x4EF997456198DD78)
 (check (test #xFFFFFFFFFFFFFFFF #xFFFFFFFFFFFFFFFF) => #x51866FD5B85ECB8A)
@@ -81,8 +81,8 @@
 (define (testv keylen key*)
   (let ((key (make-bytevector keylen))
         (plaintext (make-bytevector 8)))
-    (bytevector-uint-set! key 0 key* (endianness big) keylen)
-    (bytevector-u64-set! plaintext 0 #xFEDCBA9876543210 (endianness big))
+    (bytevector-uint-set! key 0 key* 'big keylen)
+    (bytevector-u64-set! plaintext 0 #xFEDCBA9876543210 'big)
     (let ((enc (make-bytevector 8 0))
           (dec (make-bytevector 8 0)))
       (let* ((sched (expand-blowfish-key key))
@@ -92,7 +92,7 @@
         (clear-blowfish-schedule! sched)
         (clear-blowfish-schedule! desched)
         (and (equal? dec plaintext)
-             (bytevector-u64-ref enc 0 (endianness big)))))))
+             (bytevector-u64-ref enc 0 'big))))))
 
 (check (testv 1 #xF0) => #xF9AD597C49DB005E)
 (check (testv 2 #xF0E1) => #xE91D21C1D961A6D6)

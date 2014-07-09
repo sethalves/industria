@@ -19,7 +19,7 @@
 ;; LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 ;; FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 ;; DEALINGS IN THE SOFTWARE.
-#!r6rs
+;; #!r6rs
 
 ;; This algorithm is described in Schneier's book "Applied
 ;; Cryptography". http://www.schneier.com/blowfish.html
@@ -27,20 +27,19 @@
 ;; Keys can be between 8 and 448 bits. The key length does not affect
 ;; performance. Blocks are 8 bytes.
 
-(library (weinholt crypto blowfish)
+(define-library (weinholt crypto blowfish)
   (export expand-blowfish-key blowfish-encrypt!
           reverse-blowfish-schedule blowfish-decrypt!
           clear-blowfish-schedule!
           blowfish-cbc-encrypt! blowfish-cbc-decrypt!)
-  (import (rename (rnrs)
-                  (bitwise-xor xor) (bitwise-and logand)
-                  (bitwise-ior ior)
-                  (bitwise-arithmetic-shift-left asl)
-                  (bitwise-arithmetic-shift-right asr)
-                  (bytevector-u8-ref u8-ref))
-          (only (srfi :1 lists) iota))
+  (import (scheme base)
+          (srfi 60)
+          (only (srfi 1) iota)
+          (weinholt r6rs-compatibility))
 
-  (define (vector-copy x) (vector-map (lambda (i) i) x))
+  (begin
+
+  ;; (define (vector-copy x) (vector-map (lambda (i) i) x))
   (define (vector-reverse-copy x)
     (list->vector (reverse (vector->list x))))
 
@@ -49,19 +48,19 @@
     (let ((P (car schedule))
           (S (cdr schedule)))
       (assert (and (vector? P) (vector? S)))
-      (let lp ((xl (bytevector-u32-ref source source-index (endianness big)))
-               (xr (bytevector-u32-ref source (+ source-index 4) (endianness big)))
+      (let lp ((xl (bytevector-u32-ref source source-index 'big))
+               (xr (bytevector-u32-ref source (+ source-index 4) 'big))
                (i 0))
         (cond ((= i 16)
-               (bytevector-u32-set! target target-index (xor xr (vector-ref P 17)) (endianness big))
-               (bytevector-u32-set! target (+ target-index 4) (xor xl (vector-ref P 16)) (endianness big)))
+               (bytevector-u32-set! target target-index (bitwise-xor xr (vector-ref P 17)) 'big)
+               (bytevector-u32-set! target (+ target-index 4) (bitwise-xor xl (vector-ref P 16)) 'big))
               (else
-               (let ((xl (xor xl (vector-ref P i))))
-                 (lp (xor (logand #xffffffff
-                                  (+ (xor (+ (vector-ref (vector-ref S 0) (asr xl 24))
-                                             (vector-ref (vector-ref S 1) (logand #xff (asr xl 16))))
-                                          (vector-ref (vector-ref S 2) (logand #xff (asr xl 8))))
-                                     (vector-ref (vector-ref S 3) (logand #xff xl))))
+               (let ((xl (bitwise-xor xl (vector-ref P i))))
+                 (lp (bitwise-xor (bitwise-and #xffffffff
+                                  (+ (bitwise-xor (+ (vector-ref (vector-ref S 0) (arithmetic-shift xl -24))
+                                             (vector-ref (vector-ref S 1) (bitwise-and #xff (arithmetic-shift xl -16))))
+                                          (vector-ref (vector-ref S 2) (bitwise-and #xff (arithmetic-shift xl -8))))
+                                     (vector-ref (vector-ref S 3) (bitwise-and #xff xl))))
                           xr)
                      xl
                      (+ i 1))))))))
@@ -75,10 +74,10 @@
                            (unless (<= 1 len 448/8)
                              (error 'expand-blowfish-key "bad key size" len))
                            (lambda (p i)
-                             (xor (ior (asl (u8-ref key (mod i len)) 24)
-                                       (asl (u8-ref key (mod (+ i 1) len)) 16)
-                                       (asl (u8-ref key (mod (+ i 2) len)) 8)
-                                       (u8-ref key (mod (+ i 3) len)))
+                             (bitwise-xor (bitwise-ior (arithmetic-shift (bytevector-u8-ref key (modulo i len)) 24)
+                                       (arithmetic-shift (bytevector-u8-ref key (modulo (+ i 1) len)) 16)
+                                       (arithmetic-shift (bytevector-u8-ref key (modulo (+ i 2) len)) 8)
+                                       (bytevector-u8-ref key (modulo (+ i 3) len)))
                                   p)))
                          P-box
                          (list->vector (iota (vector-length P-box) 0 4))))
@@ -88,16 +87,16 @@
             (tmp (make-bytevector 8 0)))
         (do ((i 0 (+ i 2))) ((= i 18))
           (blowfish! tmp 0 tmp 0 sched)
-          (vector-set! P i (bytevector-u32-ref tmp 0 (endianness big)))
-          (vector-set! P (+ i 1) (bytevector-u32-ref tmp 4 (endianness big))))
+          (vector-set! P i (bytevector-u32-ref tmp 0 'big))
+          (vector-set! P (+ i 1) (bytevector-u32-ref tmp 4 'big)))
         (do ((i 0 (+ i 1)))
             ((= i 4))
           (do ((S (vector-ref S i))
                (j 0 (+ j 2)))
               ((= j 256))
             (blowfish! tmp 0 tmp 0 sched)
-            (vector-set! S j (bytevector-u32-ref tmp 0 (endianness big)))
-            (vector-set! S (+ j 1) (bytevector-u32-ref tmp 4 (endianness big)))))
+            (vector-set! S j (bytevector-u32-ref tmp 0 'big))
+            (vector-set! S (+ j 1) (bytevector-u32-ref tmp 4 'big))))
         sched)))
 
   (define (hex x)
@@ -117,36 +116,36 @@
 ;;; CBC mode
   
   (define (blowfish-cbc-encrypt! source source-start target target-start len sched iv)
-    (unless (fxzero? (fxand len 7))
+    (unless (zero? (bitwise-and len 7))
       (error 'blowfish-cbc-encrypt!
              "The length has to be an integer multiple of 8" len))
-    (do ((ss source-start (fx+ ss 8))
-         (ts target-start (fx+ ts 8))
-         (len len (fx- len 8)))
-        ((fx<? len 8))
-      (do ((i 0 (fx+ i 2)))
-          ((fx=? i 8))
+    (do ((ss source-start (+ ss 8))
+         (ts target-start (+ ts 8))
+         (len len (- len 8)))
+        ((< len 8))
+      (do ((i 0 (+ i 2)))
+          ((= i 8))
         (bytevector-u16-native-set! iv i
-                                    (fxxor
+                                    (bitwise-xor
                                      (bytevector-u16-native-ref iv i)
-                                     (bytevector-u16-native-ref source (fx+ ss i)))))
+                                     (bytevector-u16-native-ref source (+ ss i)))))
       (blowfish! iv 0 target ts sched)
       (bytevector-copy! target ts iv 0 8)))
 
   (define (blowfish-cbc-decrypt! source source-start target target-start len sched iv)
-    (unless (fxzero? (fxand len 7))
+    (unless (zero? (bitwise-and len 7))
       (error 'blowfish-cbc-decrypt!
              "The length has to be an integer multiple of 8" len))
     (do ((buf (make-bytevector 8))
-         (ss source-start (fx+ ss 8))
-         (ts target-start (fx+ ts 8))
-         (len len (fx- len 8)))
-        ((fx<? len 8))
+         (ss source-start (+ ss 8))
+         (ts target-start (+ ts 8))
+         (len len (- len 8)))
+        ((< len 8))
       (blowfish! source ss buf 0 sched)
-      (do ((i 0 (fx+ i 2)))
-          ((fx=? i 8))
+      (do ((i 0 (+ i 2)))
+          ((= i 8))
         (bytevector-u16-native-set! buf i
-                                    (fxxor (bytevector-u16-native-ref iv i)
+                                    (bitwise-xor (bytevector-u16-native-ref iv i)
                                            (bytevector-u16-native-ref buf i))))
       (bytevector-copy! source ss iv 0 8)
       (bytevector-copy! buf 0 target ts 8)))
@@ -424,4 +423,6 @@
        #x85cbfe4e #x8ae88dd8 #x7aaaf9b0 #x4cf9aa7e
        #x1948c25c #x02fb8a8c #x01c36ae4 #xd6ebe1f9
        #x90d4f869 #xa65cdea0 #x3f09252d #xc208e69f
-       #xb74e6132 #xce77e25b #x578fdfe3 #x3ac372e6)))
+       #xb74e6132 #xce77e25b #x578fdfe3 #x3ac372e6))
+
+  ))
