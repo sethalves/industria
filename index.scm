@@ -10,7 +10,7 @@
     (version "1.0")
     (url "http://snow2.s3-website-us-east-1.amazonaws.com/industria/crypto.tgz")
     (size 88064)
-    (checksum (md5 "98b52c1fac202b5c0197ceca5cb2253a"))
+    (checksum (md5 "3a0c8c2d962a7f3651cec371c4dcc808"))
     (library
       (name (weinholt crypto entropy))
       (path "weinholt/crypto/entropy.sld")
@@ -86,7 +86,11 @@
       (authors "Göran Weinholt <goran@weinholt.se>")
       (description "Rijndael cipher as parameterized by AES")
       (license mit)
-      (depends (srfi 1) (srfi 60) (weinholt r6rs-compatibility)))
+      (depends
+        (weinholt crypto aes private)
+        (srfi 1)
+        (srfi 60)
+        (weinholt r6rs-compatibility)))
     (library
       (name (weinholt crypto aes private))
       (path "weinholt/crypto/aes/private.sld")
@@ -112,7 +116,11 @@
       (authors "Göran Weinholt <goran@weinholt.se>")
       (description "ARCFOUR encryption")
       (license mit)
-      (depends (srfi 1))))
+      (depends
+        (srfi 1)
+        (srfi 60)
+        (weinholt r6rs-compatibility)
+        (weinholt bytevectors))))
   (package
     (name ())
     (version "1.0")
@@ -133,8 +141,8 @@
     (name ())
     (version "1.0")
     (url "http://snow2.s3-website-us-east-1.amazonaws.com/industria/bytevectors.tgz")
-    (size 8704)
-    (checksum (md5 "16ec6d18c7b06905ab8e7bd38a53931c"))
+    (size 9216)
+    (checksum (md5 "3f448f158835c0ba762a5743bf70d5bc"))
     (library
       (name (weinholt bytevectors))
       (path "weinholt/bytevectors.sld")
