@@ -1,4 +1,4 @@
-#!/usr/bin/env scheme-script
+;; #!/usr/bin/env scheme-script
 ;; -*- mode: scheme; coding: utf-8 -*- !#
 ;; Copyright © 2010 Göran Weinholt <goran@weinholt.se>
 
@@ -19,11 +19,11 @@
 ;; LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 ;; FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 ;; DEALINGS IN THE SOFTWARE.
-#!r6rs
+;; #!r6rs
 
-(import (weinholt crypto arcfour)
-        (srfi :78 lightweight-testing)
-        (rnrs))
+;; (import (weinholt crypto arcfour)
+;;         (srfi :78 lightweight-testing)
+;;         (rnrs))
 
 (define (arcfour pt key)
   (let ((ct (make-bytevector (bytevector-length pt) 0))
@@ -34,15 +34,15 @@
 
 ;; Test vectors from draft-kaukonen-cipher-arcfour-03.txt
 
-(check (arcfour #vu8(#x00 #x00 #x00 #x00 #x00 #x00 #x00 #x00)
-                #vu8(#x01 #x23 #x45 #x67 #x89 #xAB #xCD #xEF))
-       => #vu8(#x74 #x94 #xC2 #xE7 #x10 #x4B #x08 #x79))
+(check (arcfour #u8(#x00 #x00 #x00 #x00 #x00 #x00 #x00 #x00)
+                #u8(#x01 #x23 #x45 #x67 #x89 #xAB #xCD #xEF))
+       => #u8(#x74 #x94 #xC2 #xE7 #x10 #x4B #x08 #x79))
 
-(check (arcfour #vu8(#xdc #xee #x4c #xf9 #x2c)
-                #vu8(#x61 #x8a #x63 #xd2 #xfb))
-       => #vu8(#xf1 #x38 #x29 #xc9 #xde))
+(check (arcfour #u8(#xdc #xee #x4c #xf9 #x2c)
+                #u8(#x61 #x8a #x63 #xd2 #xfb))
+       => #u8(#xf1 #x38 #x29 #xc9 #xde))
 
-(check (arcfour #vu8(#x52 #x75 #x69 #x73 #x6c #x69 #x6e #x6e
+(check (arcfour #u8(#x52 #x75 #x69 #x73 #x6c #x69 #x6e #x6e
                           #x75 #x6e #x20 #x6c #x61 #x75 #x6c #x75
                           #x20 #x6b #x6f #x72 #x76 #x69 #x73 #x73
                           #x73 #x61 #x6e #x69 #x2c #x20 #x74 #xe4
@@ -81,9 +81,9 @@
                           #x75 #x6e #x20 #x74 #x65 #x65 #x6e #x2e
                           #x20 #x2d #x20 #x45 #x69 #x6e #x6f #x20
                           #x4c #x65 #x69 #x6e #x6f)
-                #vu8(#x29 #x04 #x19 #x72 #xfb #x42 #xba #x5f
+                #u8(#x29 #x04 #x19 #x72 #xfb #x42 #xba #x5f
                           #xc7 #x12 #x77 #x12 #xf1 #x38 #x29 #xc9))
-       => #vu8(#x35 #x81 #x86 #x99 #x90 #x01 #xe6 #xb5
+       => #u8(#x35 #x81 #x86 #x99 #x90 #x01 #xe6 #xb5
                     #xda #xf0 #x5e #xce #xeb #x7e #xee #x21
                     #xe0 #x68 #x9c #x1f #x00 #xee #xa8 #x1f
                     #x7d #xd2 #xca #xae #xe1 #xd2 #x76 #x3e

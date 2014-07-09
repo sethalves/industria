@@ -18,16 +18,21 @@
 ;; LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 ;; FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 ;; DEALINGS IN THE SOFTWARE.
-#!r6rs
+;; #!r6rs
 
 ;; ARCFOUR encryption
 
-(library (weinholt crypto arcfour)
+(define-library (weinholt crypto arcfour)
   (export expand-arcfour-key arcfour!
           arcfour-discard!
           clear-arcfour-keystream!)
-  (import (rnrs)
-          (only (srfi :1 lists) iota))
+  (import (scheme base)
+          (only (srfi 1) iota)
+          (srfi 60)
+          (weinholt r6rs-compatibility)
+          (weinholt bytevectors))
+
+  (begin
 
   (define (bytevector-u8-swap! bv i j)
     (let ((tmp (bytevector-u8-ref bv i)))
@@ -43,14 +48,14 @@
     (let ((S (u8-list->bytevector (iota 256)))
           (len (bytevector-length key)))
       (let lp ((i 0) (j 0))
-        (if (fx=? i 256)
+        (if (= i 256)
             (vector S 0 0)
-            (let ((j (fxand (fx+ (fx+ (bytevector-u8-ref S i)
-                                      (bytevector-u8-ref key (fxmod i len)))
+            (let ((j (bitwise-and (+ (+ (bytevector-u8-ref S i)
+                                      (bytevector-u8-ref key (modulo i len)))
                                  j)
                             #xff)))
               (bytevector-u8-swap! S i j)
-              (lp (fx+ i 1) j))))))
+              (lp (+ i 1) j))))))
 
   ;; Encipher or decipher the bytes in source and write them to the
   ;; target. The key is updated. There's no check for if source and
@@ -64,19 +69,19 @@
                (j (vector-ref key 2))
                (ss source-start)
                (ts target-start))
-        (cond ((fx=? ss se)
+        (cond ((= ss se)
                (vector-set! key 1 i)
                (vector-set! key 2 j))
               (else
-               (let* ((i (fxand #xff (fx+ i 1)))
-                      (j (fxand #xff (fx+ j (bytevector-u8-ref S i)))))
+               (let* ((i (bitwise-and #xff (+ i 1)))
+                      (j (bitwise-and #xff (+ j (bytevector-u8-ref S i)))))
                  (bytevector-u8-swap! S i j)
-                 (let ((kb (bytevector-u8-ref S (fxand (fx+ (bytevector-u8-ref S i)
+                 (let ((kb (bytevector-u8-ref S (bitwise-and (+ (bytevector-u8-ref S i)
                                                             (bytevector-u8-ref S j))
                                                        #xff)))
                        (pb (bytevector-u8-ref source ss)))
-                   (bytevector-u8-set! target ts (fxxor pb kb))
-                   (lp i j (fx+ ss 1) (fx+ ts 1)))))))))
+                   (bytevector-u8-set! target ts (bitwise-xor pb kb))
+                   (lp i j (+ ss 1) (+ ts 1)))))))))
 
   ;; Discards n bytes from the keystream. Useful for arcfour128 which
   ;; discards 1536 bytes (RFC4345).
@@ -86,17 +91,19 @@
       (let lp ((i (vector-ref key 1))
                (j (vector-ref key 2))
                (n n))
-        (cond ((fxzero? n)
+        (cond ((zero? n)
                (vector-set! key 1 i)
                (vector-set! key 2 j))
               (else
-               (let* ((i (fxand #xff (fx+ i 1)))
-                      (j (fxand #xff (fx+ j (bytevector-u8-ref S i)))))
+               (let* ((i (bitwise-and #xff (+ i 1)))
+                      (j (bitwise-and #xff (+ j (bytevector-u8-ref S i)))))
                  (bytevector-u8-swap! S i j)
-                 (lp i j (fx- n 1))))))))
+                 (lp i j (- n 1))))))))
 
   (define (clear-arcfour-keystream! key)
     (bytevector-fill! (vector-ref key 0) 0)
     (vector-set! key 0 #f)
     (vector-set! key 1 #f)
-    (vector-set! key 2 #f)))
+    (vector-set! key 2 #f))
+
+  ))

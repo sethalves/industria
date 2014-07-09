@@ -16,6 +16,7 @@ CHIBI_MODULE_PATH="" exec chibi-scheme -A . -s $0 "$@"
         (weinholt crypto uuid)
         (weinholt crypto crc)
         (weinholt crypto aes)
+        (weinholt crypto arcfour)
         )
 (include "test-common.scm")
 (display (main-program))

@@ -31,7 +31,8 @@
           bytevector->uint
           uint->bytevector
           bytevector=?/constant-time
-          bytevector->u8-list)
+          bytevector->u8-list
+          u8-list->bytevector)
   (import (scheme base)
           (scheme case-lambda)
           (srfi 60)
@@ -145,5 +146,15 @@
           (reverse lst)
           (loop (+ i 1)
                 (cons (bytevector-u8-ref bv i) lst)))))
+
+
+      (define (u8-list->bytevector lst)
+        (let ((bv (make-bytevector (length lst))))
+          (let loop ((lst lst)
+                     (pos 0))
+            (if (null? lst) bv
+                (begin
+                  (bytevector-u8-set! bv pos (car lst))
+                  (loop (cdr lst) (+ pos 1)))))))
 
   ))

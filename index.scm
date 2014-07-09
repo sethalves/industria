@@ -9,8 +9,8 @@
     (name ())
     (version "1.0")
     (url "http://snow2.s3-website-us-east-1.amazonaws.com/industria/crypto.tgz")
-    (size 82944)
-    (checksum (md5 "5eb6bfb9efa301bfffa9e80bc574391b"))
+    (size 88064)
+    (checksum (md5 "98b52c1fac202b5c0197ceca5cb2253a"))
     (library
       (name (weinholt crypto entropy))
       (path "weinholt/crypto/entropy.sld")
@@ -86,11 +86,7 @@
       (authors "Göran Weinholt <goran@weinholt.se>")
       (description "Rijndael cipher as parameterized by AES")
       (license mit)
-      (depends
-        (weinholt crypto aes private)
-        (srfi 1)
-        (srfi 60)
-        (weinholt r6rs-compatibility)))
+      (depends (srfi 1) (srfi 60) (weinholt r6rs-compatibility)))
     (library
       (name (weinholt crypto aes private))
       (path "weinholt/crypto/aes/private.sld")
@@ -106,7 +102,17 @@
         "Joos Vandewalle")
       (description "GF(2⁸)")
       (license mit)
-      (depends (srfi 60) (weinholt r6rs-compatibility))))
+      (depends (srfi 60) (weinholt r6rs-compatibility)))
+    (library
+      (name (weinholt crypto arcfour))
+      (path "weinholt/crypto/arcfour.sld")
+      (version "1.0")
+      (homepage "https://weinholt.se/industria/")
+      (maintainers "Seth Alves <seth@hungry.com>")
+      (authors "Göran Weinholt <goran@weinholt.se>")
+      (description "ARCFOUR encryption")
+      (license mit)
+      (depends (srfi 1))))
   (package
     (name ())
     (version "1.0")
