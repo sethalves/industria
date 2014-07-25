@@ -9,8 +9,8 @@
     (name ())
     (version "1.0")
     (url "http://snow2.s3-website-us-east-1.amazonaws.com/industria/crypto.tgz")
-    (size 109568)
-    (checksum (md5 "55125955d217e307f248bff1cc4540f8"))
+    (size 124416)
+    (checksum (md5 "f1e5bbd09e37535448c43cbdf14196fa"))
     (library
       (name (weinholt crypto entropy))
       (path "weinholt/crypto/entropy.sld")
@@ -131,7 +131,20 @@
       (description
         "This algorithm is described in Schneier's book \"Applied Cryptography\". http://www.schneier.com/blowfish.html")
       (license mit)
-      (depends (srfi 60) (srfi 1) (weinholt r6rs-compatibility))))
+      (depends (srfi 60) (srfi 1) (weinholt r6rs-compatibility)))
+    (library
+      (name (weinholt crypto des))
+      (path "weinholt/crypto/des.sld")
+      (version "1.0")
+      (homepage "https://weinholt.se/industria/")
+      (maintainers "Seth Alves <seth@hungry.com>")
+      (authors "Göran Weinholt <goran@weinholt.se>")
+      (description "DES")
+      (license mit)
+      (depends
+        (weinholt r6rs-compatibility)
+        (weinholt bytevectors)
+        (srfi 60))))
   (package
     (name ())
     (version "1.0")
@@ -168,8 +181,8 @@
     (name ())
     (version "1.0")
     (url "http://snow2.s3-website-us-east-1.amazonaws.com/industria/r6rs-compatibility.tgz")
-    (size 25600)
-    (checksum (md5 "acd2e7167b82bf614e35a9e5fe87a669"))
+    (size 28160)
+    (checksum (md5 "159e0a838c88e9ee475927ef7e6d8658"))
     (library
       (name (weinholt r6rs-compatibility))
       (path "weinholt/r6rs-compatibility.sld")

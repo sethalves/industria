@@ -18,6 +18,8 @@ CHIBI_MODULE_PATH="" exec chibi-scheme -A . -s $0 "$@"
         (weinholt crypto aes)
         (weinholt crypto arcfour)
         (weinholt crypto blowfish)
+        (weinholt crypto des)
+        (srfi 60)
         )
 (include "test-common.scm")
 (display (main-program))

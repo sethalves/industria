@@ -65,7 +65,24 @@
    call-with-bytevector-output-port
    call-with-string-output-port
 
+   bitwise-bit-field
+   bitwise-bit-count
    bitwise-reverse-bit-field
+   bitwise-rotate-bit-field
+
+   fxarithmetic-shift-left
+   fxarithmetic-shift-right
+   bitwise-arithmetic-shift-left
+   bitwise-arithmetic-shift-right
+   fx+
+   fx-
+   fx*
+   fx=?
+   fx>=?
+   fxbit-count
+   fxbit-field
+   fxior
+   fxand
    )
   (import (scheme base)
           (scheme write)
@@ -628,5 +645,84 @@
            (bitwise-ior (arithmetic-shift ret start)
                         (copy-bit-field v 0 start end)))))
 
+
+    (define (bitwise-rotate-bit-field n start end count)
+      (let ((width (- end start)))
+        (if (positive? width)
+            (let* ((count (modulo count width))
+                   (field0 (bitwise-bit-field n start end))
+                   (field1 (arithmetic-shift field0 count))
+                   (field2 (arithmetic-shift field0 (- width count)))
+                   (field (bitwise-ior field1 field2)))
+              (copy-bit-field n start end field))
+            n)))
+
+
+    (define (bitwise-bit-count ei)
+      (cond ((>= ei 0)
+             (let loop ((ei ei)
+                        (result 0))
+               (if (= ei 0) result
+                   (loop (arithmetic-shift ei -1)
+                         (if (> (bitwise-and ei 1) 0)
+                             (+ result 1)
+                             result)))))
+            (else
+             (bitwise-not (bitwise-bit-count (bitwise-not ei))))))
+
+    (define (bitwise-bit-field x1 x2 x3)
+      (let ((mask (bitwise-not (arithmetic-shift -1 x3))))
+        (arithmetic-shift (bitwise-and x1 mask) (- x2))))
+
+
+    (define (fxarithmetic-shift-left v n)
+      (cond ((>= n 32) 0)
+            ((< n -32) 0)
+            (else
+             (bitwise-and #xffffffffffffffff
+                          (arithmetic-shift (bitwise-and #xffffffffffffffff v) n)))))
+
+
+    (define (fxarithmetic-shift-right v n)
+      (fxarithmetic-shift-left v (- n)))
+
+
+    (define (bitwise-arithmetic-shift-left v n)
+      (arithmetic-shift v n))
+
+
+    (define (bitwise-arithmetic-shift-right v n)
+      (arithmetic-shift v (- n)))
+
+    (define (fx+ a b)
+      (bitwise-and #xffffffffffffffff (+ a b)))
+
+    (define (fx- a b)
+      (bitwise-and #xffffffffffffffff (- a b)))
+
+    (define (fx* a b)
+      (bitwise-and #xffffffffffffffff (* a b)))
+
+    (define (fx=? a b)
+      (= a b))
+
+    (define (fx>=? a b)
+      (>= a b))
+
+    (define (fxbit-count v)
+      (bitwise-bit-count v))
+
+    (define (fxbit-field v a b)
+      (bitwise-bit-field (bitwise-and #xffffffffffffffff v) a b))
+
+    (define (fxior a b)
+      (bitwise-ior
+       (bitwise-and #xffffffffffffffff a)
+       (bitwise-and #xffffffffffffffff b)))
+
+    (define (fxand a b)
+      (bitwise-and
+       (bitwise-and #xffffffffffffffff a)
+       (bitwise-and #xffffffffffffffff b)))
 
     ))

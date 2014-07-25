@@ -21,6 +21,8 @@ exec gosh \
         (weinholt crypto aes)
         (weinholt crypto arcfour)
         (weinholt crypto blowfish)
+        (weinholt crypto des)
+        (srfi 60)
         )
 (include "test-common.scm")
 (display (main-program))

@@ -18,6 +18,7 @@ exec sash -A . -F .sld $0 "$@"
         (weinholt crypto aes)
         (weinholt crypto arcfour)
         (weinholt crypto blowfish)
+        (weinholt crypto des)
         )
 (include "test-common.scm")
 (display (main-program))

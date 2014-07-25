@@ -73,5 +73,13 @@
    (authors "Göran Weinholt <goran@weinholt.se>")
    (description "This algorithm is described in Schneier's book \"Applied Cryptography\". http://www.schneier.com/blowfish.html")
    (license mit))
+  (library
+   (path "weinholt/crypto/des.sld")
+   (version "1.0")
+   (homepage "https://weinholt.se/industria/")
+   (maintainers "Seth Alves <seth@hungry.com>")
+   (authors "Göran Weinholt <goran@weinholt.se>")
+   (description "DES")
+   (license mit))
 
 )
