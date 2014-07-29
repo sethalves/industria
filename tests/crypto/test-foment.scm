@@ -6,6 +6,7 @@ exec foment $0 "$@"
 (import (scheme base)
         (scheme char)
         (scheme write)
+        (srfi 60)
         (srfi 69)
         (srfi 78)
         (weinholt bytevectors)

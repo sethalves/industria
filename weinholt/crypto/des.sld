@@ -299,8 +299,8 @@
           (reverse (string->list str)))
      6))
 
-  (define (make-list len init)
-    (vector->list (make-vector len init)))
+  ;; (define (make-list len init)
+  ;;   (vector->list (make-vector len init)))
 
   (define (des-crypt password salt)
     (let* ((password-shifted (map (lambda (x) (fxarithmetic-shift-left (fxand x #x7f) 1))

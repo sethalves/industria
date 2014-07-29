@@ -65,7 +65,6 @@
    call-with-bytevector-output-port
    call-with-string-output-port
 
-   bitwise-bit-field
    bitwise-bit-count
    bitwise-reverse-bit-field
    bitwise-rotate-bit-field
@@ -250,13 +249,6 @@
 
     (define (bitwise-bit-set? n i)
       (> (bitwise-and (arithmetic-shift n (- i)) 1) 0))
-
-
-    (define (bitwise-bit-field ei1 ei2 ei3)
-      (let ((mask (bitwise-not (arithmetic-shift -1 ei3))))
-        (arithmetic-shift
-         (bitwise-and ei1 mask)
-         (- ei2))))
 
 
     (define (bytevector-fill! bv n)
